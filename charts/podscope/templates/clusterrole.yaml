@@ -1,0 +1,71 @@
+{{- if .Values.rbac.create -}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "podscope.fullname" . }}-reader
+  labels:
+    {{- include "podscope.labels" . | nindent 4 }}
+rules:
+  # Allow read access to cluster resources
+  - apiGroups: [""]
+    resources:
+      - nodes
+      - namespaces
+      - pods
+      - services
+      - configmaps
+      - endpoints
+      - persistentvolumes
+      - persistentvolumeclaims
+    verbs:
+      - get
+      - list
+      - watch
+  # Allow reading pod logs
+  - apiGroups: [""]
+    resources:
+      - pods/log
+    verbs:
+      - get
+      - list
+  # Allow access to apps resources
+  - apiGroups: ["apps"]
+    resources:
+      - deployments
+      - statefulsets
+      - daemonsets
+      - replicasets
+    verbs:
+      - get
+      - list
+      - watch
+  # Allow access to batch resources
+  - apiGroups: ["batch"]
+    resources:
+      - jobs
+      - cronjobs
+    verbs:
+      - get
+      - list
+      - watch
+  # Allow access to networking resources
+  - apiGroups: ["networking.k8s.io"]
+    resources:
+      - ingresses
+      - networkpolicies
+    verbs:
+      - get
+      - list
+      - watch
+  # Allow access to storage resources
+  - apiGroups: ["storage.k8s.io"]
+    resources:
+      - storageclasses
+    verbs:
+      - get
+      - list
+      - watch
+{{- with .Values.rbac.additionalRules }}
+  {{- toYaml . | nindent 2 }}
+{{- end }}
+{{- end }}

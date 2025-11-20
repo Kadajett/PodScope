@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "podscope.configMapName" . }}
+  labels:
+    {{- include "podscope.labels" . | nindent 4 }}
+data:
+  # Kubernetes Configuration
+  KUBECTL_CONTEXT: {{ .Values.config.kubectlContext | quote }}
+
+  # Prometheus Configuration
+  PROMETHEUS_URL: {{ .Values.config.prometheusUrl | quote }}
+
+  {{- if .Values.config.victoriaMetricsUrl }}
+  # Victoria Metrics URL
+  VICTORIA_METRICS_URL: {{ .Values.config.victoriaMetricsUrl | quote }}
+  {{- end }}
+
+  {{- if .Values.config.grafanaUrl }}
+  # Grafana API URL
+  GRAFANA_URL: {{ .Values.config.grafanaUrl | quote }}
+  {{- end }}
+
+  # API Security
+  KUBECTL_EXEC_RATE_LIMIT: {{ .Values.config.kubectlExecRateLimit | quote }}
+
+  # Redis/BullMQ Configuration
+  REDIS_INSTANCES: {{ .Values.config.redisInstances | quote }}
+
+  # Logging Configuration
+  LOG_LEVEL: {{ .Values.config.logging.level | quote }}
+  LOG_DESTINATION: {{ .Values.config.logging.destination | quote }}
+  {{- if .Values.config.logging.filePath }}
+  LOG_FILE_PATH: {{ .Values.config.logging.filePath | quote }}
+  {{- end }}

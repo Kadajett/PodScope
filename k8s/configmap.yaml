@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: podscope-config
+  namespace: podscope
+data:
+  # Kubernetes Configuration
+  # Leave empty to use in-cluster configuration
+  KUBECTL_CONTEXT: ""
+
+  # Prometheus Configuration
+  PROMETHEUS_URL: "http://prometheus.monitoring.svc.cluster.local:9090"
+
+  # Optional: Grafana API (uncomment and update if needed)
+  # GRAFANA_URL: "http://grafana.monitoring.svc.cluster.local:80"
+
+  # API Security
+  # Rate limiting for exec endpoint (requests per minute)
+  KUBECTL_EXEC_RATE_LIMIT: "10"
+
+  # Redis/BullMQ Configuration (comma-separated for multiple instances)
+  # Format: name:host:port or name:host:port:password
+  # Example: REDIS_INSTANCES: "myapp:redis.default.svc.cluster.local:6379,cache:redis.cache.svc.cluster.local:6379"
+  REDIS_INSTANCES: ""

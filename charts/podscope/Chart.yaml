@@ -1,0 +1,40 @@
+apiVersion: v2
+name: podscope
+description: Lightweight Kubernetes monitoring dashboard with Prometheus integration
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+
+keywords:
+  - kubernetes
+  - monitoring
+  - prometheus
+  - dashboard
+  - observability
+  - victoriametrics
+  - bullmq
+
+home: https://github.com/Kadajett/PodScope
+sources:
+  - https://github.com/Kadajett/PodScope
+
+maintainers:
+  - name: Kadajett
+    email: jeremy@example.com
+    url: https://github.com/Kadajett
+
+icon: https://raw.githubusercontent.com/Kadajett/PodScope/main/public/icon.png
+
+annotations:
+  # ArtifactHub annotations
+  artifacthub.io/category: monitoring-logging
+  artifacthub.io/license: BSL-1.1
+  artifacthub.io/operator: "false"
+  artifacthub.io/prerelease: "false"
+  artifacthub.io/recommendations: |
+    - url: https://prometheus.io/
+  artifacthub.io/links: |
+    - name: GitHub
+      url: https://github.com/Kadajett/PodScope
+    - name: Documentation
+      url: https://github.com/Kadajett/PodScope#readme

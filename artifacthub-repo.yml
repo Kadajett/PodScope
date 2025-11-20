@@ -1,0 +1,5 @@
+# ArtifactHub repository metadata file
+repositoryID: <YOUR_REPOSITORY_ID>
+owners:
+  - name: Kadajett
+    email: jeremy@example.com
