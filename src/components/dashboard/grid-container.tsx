@@ -121,26 +121,6 @@ export function GridContainer({
                       </span>
                     </div>
                     <div className="flex items-center gap-1">
-                      {onContainerSettings && (
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 w-6 p-0"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onContainerSettings(container.i);
-                                }}
-                              >
-                                <Code2 className="h-3 w-3" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Edit Config</TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      )}
                       {onContainerRemove && (
                         <TooltipProvider>
                           <Tooltip>

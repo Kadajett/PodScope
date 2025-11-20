@@ -238,7 +238,7 @@ export function ReplicaSetMetrics({ group }: ReplicaSetMetricsProps) {
           {isLoading ? (
             <Skeleton className="h-[140px] w-full" />
           ) : cpuChartData.length > 0 ? (
-            <div style={{ height: "140px" }}>
+            <div style={{ height: "140px", width: "100%", position: "relative", overflow: "hidden" }}>
               <Chart
                 options={{
                   data: cpuChartData,
@@ -265,7 +265,7 @@ export function ReplicaSetMetrics({ group }: ReplicaSetMetricsProps) {
           {isLoading ? (
             <Skeleton className="h-[140px] w-full" />
           ) : memChartData.length > 0 ? (
-            <div style={{ height: "140px" }}>
+            <div style={{ height: "140px", width: "100%", position: "relative", overflow: "hidden" }}>
               <Chart
                 options={{
                   data: memChartData,

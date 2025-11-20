@@ -91,7 +91,7 @@ export function PodSparkline({ podName, namespace, metric, height = 40 }: Sparkl
 
   return (
     <div className="flex items-center gap-3">
-      <div style={{ width: "140px", height: `${height}px` }}>
+      <div style={{ width: "140px", height: `${height}px`, position: "relative", overflow: "hidden" }}>
         <Chart
           options={{
             data: chartData,
@@ -172,7 +172,7 @@ export function PodMetricsChart({ podName, namespace, metric, height = 150 }: Sp
   }
 
   return (
-    <div style={{ height: `${height}px` }} className="w-full">
+    <div style={{ height: `${height}px`, width: '100%', position: 'relative', overflow: 'hidden' }}>
       <Chart
         options={{
           data: chartData,

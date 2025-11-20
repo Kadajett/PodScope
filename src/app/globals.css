@@ -119,6 +119,51 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Firefox scrollbar styling */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: oklch(0.708 0 0) oklch(0.97 0 0);
+  }
+
+  .dark * {
+    scrollbar-color: oklch(0.556 0 0) oklch(0.205 0 0);
+  }
+
+  /* Chrome/Safari/Edge scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: oklch(0.97 0 0);
+    border-radius: 5px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: oklch(0.708 0 0);
+    border-radius: 5px;
+    border: 2px solid oklch(0.97 0 0);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.556 0 0);
+  }
+
+  .dark ::-webkit-scrollbar-track {
+    background: oklch(0.205 0 0);
+    border: 1px solid oklch(1 0 0 / 5%);
+  }
+
+  .dark ::-webkit-scrollbar-thumb {
+    background: oklch(0.556 0 0);
+    border: 2px solid oklch(0.205 0 0);
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.708 0 0);
+  }
 }
 
 /* React Grid Layout Styles */
