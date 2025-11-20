@@ -134,7 +134,7 @@ function PodRow({
     <div>
       <button
         type="button"
-        className={`flex items-center justify-between px-4 py-2 ${paddingLeft} hover:bg-muted/50 cursor-pointer border-b border-muted/30`}
+        className={`flex w-full items-center justify-between px-4 py-2 ${paddingLeft} hover:bg-muted/50 cursor-pointer border-b border-muted/30`}
         onClick={onToggleExpand}
       >
         <div className="flex items-center gap-3">
@@ -448,7 +448,7 @@ export function NamespacePodExplorer({
                   >
                     <button
                       type="button"
-                      className="flex items-center justify-between px-4 py-3 bg-muted/50 hover:bg-muted cursor-pointer border-b"
+                      className="flex w-full items-center justify-between px-4 py-3 bg-muted/50 hover:bg-muted cursor-pointer border-b"
                       onClick={() => toggleNamespace(item.namespace)}
                     >
                       <div className="flex items-center gap-2">
@@ -491,7 +491,7 @@ export function NamespacePodExplorer({
                   >
                     <button
                       type="button"
-                      className="flex items-center justify-between px-4 py-3 pl-12 bg-muted/30 hover:bg-muted/40 cursor-pointer border-b"
+                      className="flex w-full items-center justify-between px-4 py-3 pl-12 bg-muted/30 hover:bg-muted/40 cursor-pointer border-b"
                       onClick={() => toggleReplicaSet(rsKey)}
                     >
                       <div className="flex items-center gap-2">
