@@ -59,11 +59,15 @@ jobs:
           node-version: '20'
 
       - name: Restore dependencies
+        id: cache
         uses: actions/cache@v3
         with:
           path: node_modules
           key: ${{ runner.os }}-deps-${{ hashFiles('package-lock.json') }}-${{ github.run_id }}
-          fail-on-cache-miss: true
+
+      - name: Install dependencies (fallback)
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: npm ci
 
       - name: Run ESLint
         run: npm run lint
@@ -88,11 +92,15 @@ jobs:
           node-version: '20'
 
       - name: Restore dependencies
+        id: cache
         uses: actions/cache@v3
         with:
           path: node_modules
           key: ${{ runner.os }}-deps-${{ hashFiles('package-lock.json') }}-${{ github.run_id }}
-          fail-on-cache-miss: true
+
+      - name: Install dependencies (fallback)
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: npm ci
 
       - name: Run TypeScript type check
         run: npm run type-check
@@ -114,11 +122,15 @@ jobs:
           node-version: '20'
 
       - name: Restore dependencies
+        id: cache
         uses: actions/cache@v3
         with:
           path: node_modules
           key: ${{ runner.os }}-deps-${{ hashFiles('package-lock.json') }}-${{ github.run_id }}
-          fail-on-cache-miss: true
+
+      - name: Install dependencies (fallback)
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: npm ci
 
       - name: Build application
         run: npm run build
@@ -156,13 +168,17 @@ jobs:
           node-version: '20'
 
       - name: Restore dependencies
+        id: cache
         uses: actions/cache@v3
         with:
           path: |
             node_modules
             ~/.cache/Playwright
           key: ${{ runner.os }}-deps-${{ hashFiles('package-lock.json') }}-${{ github.run_id }}
-          fail-on-cache-miss: true
+
+      - name: Install dependencies (fallback)
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: npm ci
 
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
