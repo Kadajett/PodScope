@@ -1,0 +1,165 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  CHART_NAME: podscope
+
+jobs:
+  # Build and push Docker image
+  docker:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write  # Required for attestation
+      attestations: write  # Required for attestation
+
+    outputs:
+      image-digest: ${{ steps.build.outputs.digest }}
+      image-tags: ${{ steps.meta.outputs.tags }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+
+  # Publish Helm chart - waits for Docker to complete
+  helm:
+    name: Publish Helm Chart
+    runs-on: ubuntu-latest
+    needs: docker  # Wait for Docker job to complete
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.14.0'
+
+      - name: Log in to GitHub Container Registry
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ${{ env.REGISTRY }} --username ${{ github.actor }} --password-stdin
+
+      - name: Extract version from tag or Chart.yaml
+        id: version
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            # Extract from tag (remove 'v' prefix)
+            VERSION=${GITHUB_REF#refs/tags/v}
+          else
+            # Extract from Chart.yaml for manual runs
+            VERSION=$(grep '^version:' charts/${{ env.CHART_NAME }}/Chart.yaml | awk '{print $2}')
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Publishing chart version: $VERSION"
+
+      - name: Update Chart.yaml version (if triggered by tag)
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          sed -i "s/^version:.*/version: ${{ steps.version.outputs.version }}/" charts/${{ env.CHART_NAME }}/Chart.yaml
+          sed -i "s/^appVersion:.*/appVersion: \"${{ steps.version.outputs.version }}\"/" charts/${{ env.CHART_NAME }}/Chart.yaml
+
+      - name: Show Chart.yaml
+        run: |
+          cat charts/${{ env.CHART_NAME }}/Chart.yaml
+
+      - name: Package Helm chart
+        run: |
+          helm package charts/${{ env.CHART_NAME }} --destination .
+
+      - name: Push Helm chart to OCI registry
+        run: |
+          # Convert username to lowercase for OCI compatibility
+          REPO_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          helm push ${{ env.CHART_NAME }}-${{ steps.version.outputs.version }}.tgz oci://${{ env.REGISTRY }}/${REPO_OWNER}
+
+      - name: Logout from registry
+        if: always()
+        run: |
+          helm registry logout ${{ env.REGISTRY }}
+
+  # Summary job - makes it easy to see overall release status
+  release-success:
+    name: Release Complete
+    runs-on: ubuntu-latest
+    needs: [docker, helm]
+    if: always()
+
+    steps:
+      - name: Check release status
+        run: |
+          if [[ "${{ needs.docker.result }}" != "success" ]] || \
+             [[ "${{ needs.helm.result }}" != "success" ]]; then
+            echo "❌ Release failed!"
+            echo "Docker: ${{ needs.docker.result }}"
+            echo "Helm: ${{ needs.helm.result }}"
+            exit 1
+          fi
+          echo "✅ Release completed successfully!"
+          echo "Docker Image: Published"
+          echo "Helm Chart: Published"
+
+      - name: Release Summary
+        run: |
+          echo "## Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Docker image published to \`ghcr.io/kadajett/podscope\`" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Helm chart published to \`oci://ghcr.io/kadajett/podscope\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Installation" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "helm install podscope oci://ghcr.io/kadajett/podscope --version ${{ needs.helm.outputs.version || 'latest' }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

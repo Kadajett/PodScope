@@ -6,29 +6,114 @@ on:
   pull_request:
     branches: [main, develop]
 
-jobs:
-  lint-and-build:
-    runs-on: ubuntu-latest
+# Automatically cancel in-progress CI runs for the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
-    strategy:
-      matrix:
-        node-version: [20.x]
+jobs:
+  # Setup job - installs dependencies and caches them for other jobs
+  setup:
+    name: Setup Dependencies
+    runs-on: ubuntu-latest
+    # Skip if PR is in draft mode
+    if: github.event.pull_request.draft == false || github.event_name == 'push'
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js ${{ matrix.node-version }}
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: '20'
           cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
 
+      - name: Cache node_modules
+        uses: actions/cache/save@v3
+        with:
+          path: |
+            node_modules
+            ~/.cache/Playwright
+          key: ${{ runner.os }}-deps-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
+
+  # Lint job - runs ESLint
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    needs: setup
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Restore dependencies
+        uses: actions/cache/restore@v3
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-deps-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
+          fail-on-cache-miss: true
+
       - name: Run ESLint
         run: npm run lint
+
+      - name: Run Biome check
+        run: npm run check:ci
+
+  # Type check job
+  typecheck:
+    name: Type Check
+    runs-on: ubuntu-latest
+    needs: setup
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Restore dependencies
+        uses: actions/cache/restore@v3
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-deps-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
+          fail-on-cache-miss: true
+
+      - name: Run TypeScript type check
+        run: npm run type-check
+
+  # Build job - ensures app can build successfully
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: setup
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Restore dependencies
+        uses: actions/cache/restore@v3
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-deps-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
+          fail-on-cache-miss: true
 
       - name: Build application
         run: npm run build
@@ -41,5 +126,77 @@ jobs:
           LOG_LEVEL: info
           LOG_DESTINATION: stdout
 
-      - name: Check for type errors
-        run: npx tsc --noEmit
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: .next/
+          retention-days: 1
+
+  # E2E Tests - runs Playwright tests
+  e2e:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    needs: [setup, build]
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Restore dependencies
+        uses: actions/cache/restore@v3
+        with:
+          path: |
+            node_modules
+            ~/.cache/Playwright
+          key: ${{ runner.os }}-deps-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
+          fail-on-cache-miss: true
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+
+      - name: Run E2E tests
+        run: npm run test:e2e
+        env:
+          CI: true
+
+      - name: Upload Playwright Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30
+
+      - name: Upload Test Screenshots
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-screenshots
+          path: test-results/
+          retention-days: 30
+
+  # Status check job - makes it easy to require all checks
+  ci-success:
+    name: CI Success
+    runs-on: ubuntu-latest
+    needs: [lint, typecheck, build, e2e]
+    if: always()
+
+    steps:
+      - name: Check all jobs status
+        run: |
+          if [[ "${{ needs.lint.result }}" != "success" ]] || \
+             [[ "${{ needs.typecheck.result }}" != "success" ]] || \
+             [[ "${{ needs.build.result }}" != "success" ]] || \
+             [[ "${{ needs.e2e.result }}" != "success" ]]; then
+            echo "One or more CI jobs failed"
+            exit 1
+          fi
+          echo "All CI checks passed!"
