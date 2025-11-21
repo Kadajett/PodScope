@@ -109,7 +109,14 @@ export function resolveQueries(
   queryLibrary: QueryLibrary,
   variables?: Record<string, string>
 ): string[] {
-  return queryRefs.map((ref) => resolveQuery(ref, queryLibrary, variables));
+  return queryRefs.map((ref, index) => {
+    try {
+      return resolveQuery(ref, queryLibrary, variables);
+    } catch (error) {
+      log.error({ queryRef: ref, index, error }, `Failed to resolve query at index ${index}`);
+      throw error;
+    }
+  });
 }
 
 /**

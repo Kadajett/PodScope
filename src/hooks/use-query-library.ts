@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import type { QueryLibrary } from "@/config/schema";
+import defaultDashboard from "@/config/default-dashboard.json";
+import type { DashboardConfig, QueryLibrary } from "@/config/schema";
 import {
   deleteUserQuery,
   loadUserQueries,
@@ -29,10 +30,11 @@ export function useQueryLibrary() {
 
   // Merged query library (default + user queries)
   const queryLibrary = useMemo(() => {
-    if (!config) return userQueries;
+    // Use config.queries if available, otherwise fall back to default dashboard queries
+    const baseQueries = config?.queries || (defaultDashboard as DashboardConfig).queries;
 
-    // Deep merge default queries with user queries
-    const merged: QueryLibrary = { ...config.queries };
+    // Deep merge base queries with user queries
+    const merged: QueryLibrary = { ...baseQueries };
 
     for (const namespace in userQueries) {
       if (!merged[namespace]) {
@@ -119,10 +121,49 @@ export function useResolvedQueries(
   return useMemo(() => {
     if (!queryRefs || queryRefs.length === 0) return [];
 
+    // Filter out invalid query refs before attempting to resolve
+    const validQueryRefs = queryRefs.filter((ref) => {
+      // Check if ref is a valid string
+      if (!ref || typeof ref !== "string" || ref.trim() === "") {
+        log.warn(
+          { ref, index: queryRefs.indexOf(ref) },
+          "Skipping invalid query ref: empty or non-string"
+        );
+        return false;
+      }
+
+      // Check for common invalid patterns
+      if (ref === "{}" || ref === "[]" || ref === "null" || ref === "undefined") {
+        log.warn(
+          { ref, index: queryRefs.indexOf(ref) },
+          "Skipping invalid query ref: serialized empty value"
+        );
+        return false;
+      }
+
+      return true;
+    });
+
+    if (validQueryRefs.length === 0) {
+      log.warn({ originalRefs: queryRefs }, "All query refs were filtered out as invalid");
+      return [];
+    }
+
+    if (validQueryRefs.length < queryRefs.length) {
+      log.warn(
+        {
+          original: queryRefs.length,
+          valid: validQueryRefs.length,
+          filtered: queryRefs.length - validQueryRefs.length,
+        },
+        "Some query refs were filtered out as invalid"
+      );
+    }
+
     try {
-      return resolveQueries(queryRefs, queryLibrary, variables);
+      return resolveQueries(validQueryRefs, queryLibrary, variables);
     } catch (error) {
-      log.error({ queryRefs, error }, "Failed to resolve queries");
+      log.error({ queryRefs: validQueryRefs, error }, "Failed to resolve queries");
       return [];
     }
   }, [queryRefs, queryLibrary, variables]);

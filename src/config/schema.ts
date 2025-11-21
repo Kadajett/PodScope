@@ -308,13 +308,27 @@ export type KubectlTerminalComponentConfig = z.infer<typeof KubectlTerminalCompo
  * Format: "namespace.queryName_version" or "promQueries.namespace.queryName_version"
  */
 export function parseQueryRef(ref: string): { namespace: string; queryName: string } {
+  // Validate input is a non-empty string
+  if (!ref || typeof ref !== "string" || ref.trim() === "") {
+    throw new Error(
+      `Invalid query reference: received ${JSON.stringify(ref)}. Expected a non-empty string in format "namespace.queryName_version"`
+    );
+  }
+
+  // Check for common invalid patterns
+  if (ref === "{}" || ref === "[]" || ref === "null" || ref === "undefined") {
+    throw new Error(
+      `Invalid query reference: received ${ref}. This appears to be a serialized empty value. Expected format "namespace.queryName_version"`
+    );
+  }
+
   // Remove "promQueries." prefix if present
   const cleanRef = ref.startsWith("promQueries.") ? ref.slice(12) : ref;
 
   const parts = cleanRef.split(".");
   if (parts.length !== 2) {
     throw new Error(
-      `Invalid query reference format: ${ref}. Expected "namespace.queryName_version"`
+      `Invalid query reference format: ${ref}. Expected "namespace.queryName_version" but got ${parts.length} parts after splitting by "."`
     );
   }
 
