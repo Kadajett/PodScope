@@ -76,10 +76,10 @@ export async function POST(request: NextRequest) {
     }
 
     const validation = validateQueryParams(body);
-    if (validation.error) {
+    if (validation.error || !validation.params) {
       const response: PrometheusApiResponse<never> = {
         success: false,
-        error: validation.error,
+        error: validation.error || "Invalid request parameters",
         timestamp,
       };
       return NextResponse.json(response, { status: 400 });
