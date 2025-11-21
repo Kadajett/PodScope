@@ -37,6 +37,6 @@ entries:
     - https://github.com/Kadajett/PodScope
     type: application
     urls:
-    - https://kadajett.github.io/PodScope/podscope-0.1.0.tgz
+    - https://github.com/Kadajett/PodScope/blob/main/podscope-0.1.0.tgz
     version: 0.1.0
 generated: "2025-11-21T08:35:43.278174674-05:00"
