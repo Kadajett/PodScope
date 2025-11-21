@@ -51,7 +51,7 @@ export async function queryInstant(
     params.append("time", request.time);
   }
 
-  return fetchPrometheus(`/api/v1/query?${params.toString()}`);
+  return await fetchPrometheus(`/api/v1/query?${params.toString()}`);
 }
 
 export async function queryRange(
@@ -64,11 +64,11 @@ export async function queryRange(
     step: request.step,
   });
 
-  return fetchPrometheus(`/api/v1/query_range?${params.toString()}`);
+  return await fetchPrometheus(`/api/v1/query_range?${params.toString()}`);
 }
 
 export async function getTargets(): Promise<PrometheusResponse<PrometheusTargetsResponse>> {
-  return fetchPrometheus("/api/v1/targets");
+  return await fetchPrometheus("/api/v1/targets");
 }
 
 export async function getHealth(): Promise<PrometheusHealthStatus> {

@@ -16,6 +16,7 @@ export interface KubernetesPod {
   age: string;
   ip?: string;
   node?: string;
+  labels?: Record<string, string>;
   containers: {
     name: string;
     image: string;
@@ -34,6 +35,7 @@ export interface KubernetesNode {
   osImage: string;
   kernelVersion: string;
   containerRuntime: string;
+  labels?: Record<string, string>;
   capacity: {
     cpu: string;
     memory: string;
@@ -60,6 +62,7 @@ export interface KubernetesService {
   type: string;
   clusterIP: string;
   externalIP?: string;
+  labels?: Record<string, string>;
   ports: {
     name?: string;
     protocol: string;

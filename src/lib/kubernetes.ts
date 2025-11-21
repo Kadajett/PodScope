@@ -111,6 +111,7 @@ export async function getPods(namespace?: string): Promise<KubernetesPod[]> {
         age,
         ip: item.status?.podIP,
         node: item.spec?.nodeName,
+        labels: item.metadata?.labels,
         containers: (item.spec?.containers || []).map(
           (container: { name: string; image: string }, index: number) => {
             const status = containerStatuses[index];
@@ -167,6 +168,7 @@ export async function getNodes(): Promise<KubernetesNode[]> {
         osImage: item.status?.nodeInfo?.osImage || "",
         kernelVersion: item.status?.nodeInfo?.kernelVersion || "",
         containerRuntime: item.status?.nodeInfo?.containerRuntimeVersion || "",
+        labels: item.metadata?.labels,
         capacity: {
           cpu: item.status?.capacity?.cpu || "0",
           memory: item.status?.capacity?.memory || "0",
@@ -222,6 +224,7 @@ export async function getServices(namespace?: string): Promise<KubernetesService
         type: item.spec?.type || "",
         clusterIP: item.spec?.clusterIP || "",
         externalIP,
+        labels: item.metadata?.labels,
         ports: (item.spec?.ports || []).map((port) => ({
           name: port.name,
           protocol: port.protocol || "",

@@ -87,7 +87,7 @@ export async function executeKubeQuery(query: KubeQuery): Promise<{
  * Apply field selector filtering (client-side)
  * Supports simple field selectors like "status.phase=Running"
  */
-function applyFieldSelector(items: Array<any>, fieldSelector: string): Array<any> {
+function applyFieldSelector(items: Array<KubernetesPod | KubernetesService | KubernetesNode | KubernetesNamespace>, fieldSelector: string): Array<KubernetesPod | KubernetesService | KubernetesNode | KubernetesNamespace> {
   const selectors = fieldSelector.split(",");
 
   return items.filter((item) => {
@@ -105,11 +105,11 @@ function applyFieldSelector(items: Array<any>, fieldSelector: string): Array<any
  * Apply label selector filtering (client-side)
  * Supports simple label selectors like "app=nginx,env=prod"
  */
-function applyLabelSelector(items: Array<any>, labelSelector: string): Array<any> {
+function applyLabelSelector(items: Array<KubernetesPod | KubernetesService | KubernetesNode | KubernetesNamespace>, labelSelector: string): Array<KubernetesPod | KubernetesService | KubernetesNode | KubernetesNamespace> {
   const selectors = labelSelector.split(",");
 
   return items.filter((item) => {
-    const labels = item.labels || item.metadata?.labels || {};
+    const labels = item.labels || {};
 
     return selectors.every((selector) => {
       const [key, expectedValue] = selector.split("=");
@@ -130,13 +130,13 @@ function applyLabelSelector(items: Array<any>, labelSelector: string): Array<any
  * Get a nested value from an object using dot notation
  * Example: getNestedValue({status: {phase: "Running"}}, "status.phase") => "Running"
  */
-function getNestedValue(obj: any, path: string): any {
+function getNestedValue(obj: unknown, path: string): unknown {
   const keys = path.split(".");
-  let value = obj;
+  let value: unknown = obj;
 
   for (const key of keys) {
     if (value === null || value === undefined) return undefined;
-    value = value[key];
+    value = (value as Record<string, unknown>)[key];
   }
 
   return value;

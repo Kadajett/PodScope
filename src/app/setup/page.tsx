@@ -49,6 +49,63 @@ interface HealthCheck {
   };
 }
 
+type ServiceStatus = "up" | "down" | "not_configured";
+
+function getStatusIcon(status: ServiceStatus) {
+  switch (status) {
+    case "up":
+      return <CheckCircle2 className="h-5 w-5 text-green-500" />;
+    case "down":
+      return <XCircle className="h-5 w-5 text-red-500" />;
+    case "not_configured":
+      return <AlertTriangle className="h-5 w-5 text-yellow-500" />;
+  }
+}
+
+function getStatusBadge(status: ServiceStatus) {
+  switch (status) {
+    case "up":
+      return (
+        <Badge variant="default" className="bg-green-600">
+          Connected
+        </Badge>
+      );
+    case "down":
+      return <Badge variant="destructive">Disconnected</Badge>;
+    case "not_configured":
+      return <Badge variant="outline">Optional</Badge>;
+  }
+}
+
+interface ServiceStatusItemProps {
+  icon: React.ReactNode;
+  name: string;
+  required: boolean;
+  status: ServiceStatus;
+  message?: string;
+}
+
+function ServiceStatusItem({ icon, name, required, status, message }: ServiceStatusItemProps) {
+  return (
+    <div className="flex items-center justify-between p-4 border rounded-lg">
+      <div className="flex items-center gap-3">
+        {getStatusIcon(status)}
+        <div>
+          <div className="flex items-center gap-2">
+            {icon}
+            <span className="font-medium">{name}</span>
+            <Badge variant="outline" className="text-xs">
+              {required ? "Required" : "Optional"}
+            </Badge>
+          </div>
+          <p className="text-sm text-muted-foreground mt-1">{message || "Not configured"}</p>
+        </div>
+      </div>
+      {getStatusBadge(status)}
+    </div>
+  );
+}
+
 export default function SetupPage() {
   const router = useRouter();
   const [health, setHealth] = useState<HealthCheck | null>(null);
@@ -80,32 +137,6 @@ export default function SetupPage() {
     setTesting(true);
     await checkHealth();
     setTesting(false);
-  };
-
-  const getStatusIcon = (status: "up" | "down" | "not_configured") => {
-    switch (status) {
-      case "up":
-        return <CheckCircle2 className="h-5 w-5 text-green-500" />;
-      case "down":
-        return <XCircle className="h-5 w-5 text-red-500" />;
-      case "not_configured":
-        return <AlertTriangle className="h-5 w-5 text-yellow-500" />;
-    }
-  };
-
-  const getStatusBadge = (status: "up" | "down" | "not_configured") => {
-    switch (status) {
-      case "up":
-        return (
-          <Badge variant="default" className="bg-green-600">
-            Connected
-          </Badge>
-        );
-      case "down":
-        return <Badge variant="destructive">Disconnected</Badge>;
-      case "not_configured":
-        return <Badge variant="outline">Optional</Badge>;
-    }
   };
 
   const calculateProgress = () => {
@@ -202,66 +233,30 @@ export default function SetupPage() {
                 <CardDescription>Current status of all monitored services</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Prometheus Status */}
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    {getStatusIcon(health?.checks.prometheus.status || "down")}
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <Activity className="h-4 w-4" />
-                        <span className="font-medium">Prometheus</span>
-                        <Badge variant="outline" className="text-xs">
-                          Required
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {health?.checks.prometheus.message || "Not configured"}
-                      </p>
-                    </div>
-                  </div>
-                  {getStatusBadge(health?.checks.prometheus.status || "down")}
-                </div>
+                <ServiceStatusItem
+                  icon={<Activity className="h-4 w-4" />}
+                  name="Prometheus"
+                  required
+                  status={health?.checks.prometheus.status || "down"}
+                  message={health?.checks.prometheus.message}
+                />
 
-                {/* Kubernetes Status */}
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    {getStatusIcon(health?.checks.kubernetes.status || "down")}
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <Server className="h-4 w-4" />
-                        <span className="font-medium">Kubernetes</span>
-                        <Badge variant="outline" className="text-xs">
-                          Required
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {health?.checks.kubernetes.message || "Not configured"}
-                      </p>
-                    </div>
-                  </div>
-                  {getStatusBadge(health?.checks.kubernetes.status || "down")}
-                </div>
+                <ServiceStatusItem
+                  icon={<Server className="h-4 w-4" />}
+                  name="Kubernetes"
+                  required
+                  status={health?.checks.kubernetes.status || "down"}
+                  message={health?.checks.kubernetes.message}
+                />
 
-                {/* Redis Status */}
                 {health?.checks.redis && (
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      {getStatusIcon(health.checks.redis.status)}
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <Database className="h-4 w-4" />
-                          <span className="font-medium">Redis / BullMQ</span>
-                          <Badge variant="outline" className="text-xs">
-                            Optional
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {health.checks.redis.message || "For queue monitoring"}
-                        </p>
-                      </div>
-                    </div>
-                    {getStatusBadge(health.checks.redis.status)}
-                  </div>
+                  <ServiceStatusItem
+                    icon={<Database className="h-4 w-4" />}
+                    name="Redis / BullMQ"
+                    required={false}
+                    status={health.checks.redis.status}
+                    message={health.checks.redis.message || "For queue monitoring"}
+                  />
                 )}
               </CardContent>
               <CardFooter>
