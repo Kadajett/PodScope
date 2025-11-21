@@ -79,7 +79,7 @@ export function ReplicaSetMetrics({ group }: ReplicaSetMetricsProps) {
     return cpuQueries
       .filter((q) => q.data?.data?.result?.[0]?.values)
       .map((q) => ({
-        label: q.data?.podName.split("-").pop() || q.data?.podName, // Short name
+        label: (q.data?.podName.split("-").pop() || q.data?.podName) ?? "Unknown",
         data: q.data?.data.result[0].values.map(([ts, val]: [number, string]) => ({
           timestamp: new Date(ts * 1000),
           value: parseFloat(val),
@@ -91,7 +91,7 @@ export function ReplicaSetMetrics({ group }: ReplicaSetMetricsProps) {
     return memQueries
       .filter((q) => q.data?.data?.result?.[0]?.values)
       .map((q) => ({
-        label: q.data?.podName.split("-").pop() || q.data?.podName,
+        label: (q.data?.podName.split("-").pop() || q.data?.podName) ?? "Unknown",
         data: q.data?.data.result[0].values.map(([ts, val]: [number, string]) => ({
           timestamp: new Date(ts * 1000),
           value: parseFloat(val),

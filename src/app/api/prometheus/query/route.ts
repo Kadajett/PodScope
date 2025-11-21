@@ -85,7 +85,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(response, { status: 400 });
     }
 
-    const { query, time, start, end, step } = validation.params;
+    // TypeScript needs explicit assertion after validation
+    const params = validation.params;
+    const { query, time, start, end, step } = params;
 
     let result: PrometheusResponse<PrometheusQueryResult>;
 

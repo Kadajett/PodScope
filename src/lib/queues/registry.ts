@@ -178,7 +178,8 @@ export function executeQueueQueryByRef(queryRef: string): Promise<QueueQueryResu
     throw new Error(`Queue query not found: ${queryRef}`);
   }
 
-  return queueRegistry.executeQuery(query);
+  // Cast to QueueQuery since Zod schema infers compatible literal types
+  return queueRegistry.executeQuery(query as QueueQuery);
 }
 
 /**

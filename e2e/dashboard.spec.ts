@@ -111,8 +111,11 @@ test.describe("Dashboard Functionality", () => {
       // Click second tab
       await tabs.nth(1).click();
 
-      // Tab should be active
-      await expect(tabs.nth(1)).toHaveAttribute(/aria-selected|data-state/, /true|active/);
+      // Tab should be active - check for either aria-selected or data-state attribute
+      const secondTab = tabs.nth(1);
+      const hasAriaSelected = await secondTab.getAttribute("aria-selected");
+      const hasDataState = await secondTab.getAttribute("data-state");
+      expect(hasAriaSelected === "true" || hasDataState === "active").toBe(true);
     }
   });
 

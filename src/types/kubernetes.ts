@@ -36,6 +36,11 @@ export interface KubernetesNode {
   kernelVersion: string;
   containerRuntime: string;
   labels?: Record<string, string>;
+  taints?: {
+    key: string;
+    value?: string;
+    effect: string;
+  }[];
   capacity: {
     cpu: string;
     memory: string;

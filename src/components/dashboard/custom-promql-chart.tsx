@@ -83,7 +83,7 @@ function transformVectorToSeries(series: PrometheusSeries, idx: number): ChartSe
     data: [
       {
         timestamp: new Date(),
-        value: parseFloat(series.value[1]),
+        value: series.value ? parseFloat(series.value[1]) : 0,
       },
     ],
   };
