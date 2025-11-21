@@ -123,8 +123,9 @@ jobs:
       - name: Push Helm chart to OCI registry
         run: |
           # Convert username to lowercase for OCI compatibility
+          # Push to /charts/ subdirectory to avoid conflict with Docker image
           REPO_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-          helm push ${{ env.CHART_NAME }}-${{ steps.version.outputs.version }}.tgz oci://${{ env.REGISTRY }}/${REPO_OWNER}
+          helm push ${{ env.CHART_NAME }}-${{ steps.version.outputs.version }}.tgz oci://${{ env.REGISTRY }}/${REPO_OWNER}/charts
 
       - name: Logout from registry
         if: always()
