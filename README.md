@@ -28,14 +28,14 @@ A fast, lightweight Kubernetes monitoring dashboard. Built with Next.js 15, Reac
 Install PodScope from GitHub Container Registry:
 
 ```bash
-helm install podscope oci://ghcr.io/kadajett/charts/podscope \
+helm install podscope oci://ghcr.io/kadajett/podscope \
   --set config.prometheusUrl="http://prometheus.monitoring.svc.cluster.local:9090"
 ```
 
 To install a specific version:
 
 ```bash
-helm install podscope oci://ghcr.io/kadajett/charts/podscope --version 0.1.0 \
+helm install podscope oci://ghcr.io/kadajett/podscope --version 0.1.0 \
   --set config.prometheusUrl="http://prometheus.monitoring.svc.cluster.local:9090"
 ```
 
@@ -81,7 +81,7 @@ resources:
 Install with your custom values:
 
 ```bash
-helm install podscope oci://ghcr.io/kadajett/charts/podscope \
+helm install podscope oci://ghcr.io/kadajett/podscope \
   --values values.yaml
 ```
 
@@ -253,11 +253,11 @@ PodScope includes a macro system for PromQL queries:
 
 ```bash
 # Update to latest version
-helm upgrade podscope oci://ghcr.io/kadajett/charts/podscope \
+helm upgrade podscope oci://ghcr.io/kadajett/podscope \
   --reuse-values
 
 # Update with new configuration
-helm upgrade podscope oci://ghcr.io/kadajett/charts/podscope \
+helm upgrade podscope oci://ghcr.io/kadajett/podscope \
   --values values.yaml
 ```
 

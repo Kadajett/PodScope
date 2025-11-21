@@ -50,7 +50,7 @@ jobs:
 
       - name: Push Helm chart to OCI registry
         run: |
-          helm push ${{ env.CHART_NAME }}-${{ steps.version.outputs.version }}.tgz oci://${{ env.REGISTRY }}/${{ github.repository_owner }}/charts
+          helm push ${{ env.CHART_NAME }}-${{ steps.version.outputs.version }}.tgz oci://${{ env.REGISTRY }}/${{ github.repository_owner }}
 
       - name: Logout from registry
         if: always()
