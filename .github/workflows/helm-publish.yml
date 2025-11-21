@@ -30,18 +30,27 @@ jobs:
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ${{ env.REGISTRY }} --username ${{ github.actor }} --password-stdin
 
-      - name: Extract version from tag
+      - name: Extract version from tag or Chart.yaml
         id: version
         run: |
-          # Remove 'v' prefix from tag
-          VERSION=${GITHUB_REF#refs/tags/v}
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            # Extract from tag (remove 'v' prefix)
+            VERSION=${GITHUB_REF#refs/tags/v}
+          else
+            # Extract from Chart.yaml for manual runs
+            VERSION=$(grep '^version:' charts/${{ env.CHART_NAME }}/Chart.yaml | awk '{print $2}')
+          fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Publishing chart version: $VERSION"
 
-      - name: Update Chart.yaml version
+      - name: Update Chart.yaml version (if triggered by tag)
+        if: startsWith(github.ref, 'refs/tags/v')
         run: |
           sed -i "s/^version:.*/version: ${{ steps.version.outputs.version }}/" charts/${{ env.CHART_NAME }}/Chart.yaml
           sed -i "s/^appVersion:.*/appVersion: \"${{ steps.version.outputs.version }}\"/" charts/${{ env.CHART_NAME }}/Chart.yaml
+
+      - name: Show Chart.yaml
+        run: |
           cat charts/${{ env.CHART_NAME }}/Chart.yaml
 
       - name: Package Helm chart
