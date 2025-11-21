@@ -9,209 +9,303 @@ A fast, lightweight Kubernetes monitoring dashboard. Built with Next.js 15, Reac
 - **BullMQ Queue Monitoring** - Track job queues, failed jobs, and queue metrics across multiple Redis instances
 - **Customizable Dashboard** - Drag-and-drop layout with configurable panels and refresh intervals
 - **Component Library** - Pre-built visualization components for common monitoring needs
-- **In-Cluster or Remote** - Deploy inside your cluster or run externally with kubectl context
+- **In-Cluster Deployment** - Runs securely inside your cluster with RBAC support
 - **No Database Required** - Configuration stored in browser localStorage for zero infrastructure overhead
 - **Security First** - Command whitelisting, rate limiting, and RBAC support for production deployments
 - **TypeScript Native** - Full type safety with Zod schema validation
 
 ## Prerequisites
 
-Before you begin, ensure you have the following installed and configured:
-
-- **Node.js 20+** - Required for running the Next.js application
-- **kubectl** - Configured with access to your Kubernetes cluster
+- **Kubernetes Cluster** - Version 1.19 or higher
+- **Helm 3** - For installation
 - **Prometheus or VictoriaMetrics** - Accessible via HTTP (required for metrics queries)
 - **Redis** (Optional) - Required only if you want to monitor BullMQ job queues
 
-## Quick Start
+## Installation
 
-### Local Development
+### Install via Helm
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/Kadajett/PodScope
-   cd podscope
-   ```
+Install PodScope from GitHub Container Registry:
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+```bash
+helm install podscope oci://ghcr.io/kadajett/charts/podscope \
+  --set config.prometheusUrl="http://prometheus.monitoring.svc.cluster.local:9090"
+```
 
-3. **Configure environment variables**
+To install a specific version:
 
-   Copy the example environment file and update it with your cluster details:
-   ```bash
-   cp .env.example .env.local
-   ```
+```bash
+helm install podscope oci://ghcr.io/kadajett/charts/podscope --version 0.1.0 \
+  --set config.prometheusUrl="http://prometheus.monitoring.svc.cluster.local:9090"
+```
 
-   Edit `.env.local` and set at minimum:
-   ```bash
-   PROMETHEUS_URL=http://your-prometheus:9090
-   ```
+### Install with Custom Values
 
-4. **Run the development server**
-   ```bash
-   npm run dev
-   ```
+Create a `values.yaml` file with your configuration:
 
-5. **Open your browser**
+```yaml
+# values.yaml
+config:
+  prometheusUrl: "http://prometheus.monitoring.svc.cluster.local:9090"
+  victoriaMetricsUrl: ""
+  grafanaUrl: ""
+  redisInstances: "myapp:redis.default.svc.cluster.local:6379"
+  kubectlExecRateLimit: "10"
+  logging:
+    level: "info"
 
-   Navigate to [http://localhost:3000](http://localhost:3000)
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - host: podscope.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: podscope-tls
+      hosts:
+        - podscope.example.com
+
+resources:
+  requests:
+    memory: "256Mi"
+    cpu: "100m"
+  limits:
+    memory: "512Mi"
+    cpu: "500m"
+```
+
+Install with your custom values:
+
+```bash
+helm install podscope oci://ghcr.io/kadajett/charts/podscope \
+  --values values.yaml
+```
 
 ## Configuration
 
-### Environment Variables
+### Required Configuration
 
-Create a `.env.local` file in the project root with the following variables:
+The only required configuration is the Prometheus URL:
+
+```yaml
+config:
+  prometheusUrl: "http://prometheus.monitoring.svc.cluster.local:9090"
+```
+
+### Optional Configuration
+
+#### VictoriaMetrics Support
+
+If you're using VictoriaMetrics instead of or alongside Prometheus:
+
+```yaml
+config:
+  victoriaMetricsUrl: "http://victoria-metrics.monitoring.svc.cluster.local:8428"
+```
+
+#### BullMQ Queue Monitoring
+
+Monitor BullMQ job queues by providing Redis connection details:
+
+```yaml
+config:
+  redisInstances: "myapp:redis.default.svc.cluster.local:6379,cache:redis.cache.svc.cluster.local:6379"
+```
+
+Format: `name:host:port` or `name:host:port:password` (comma-separated for multiple instances)
+
+#### Grafana Integration
+
+Connect to Grafana for additional features:
+
+```yaml
+config:
+  grafanaUrl: "http://grafana.monitoring.svc.cluster.local:3000"
+
+secrets:
+  grafanaApiKey: "your-grafana-api-key"
+```
+
+#### Security Configuration
+
+Configure rate limiting for sensitive operations:
+
+```yaml
+config:
+  kubectlExecRateLimit: "10"  # Requests per minute
+```
+
+### Ingress Configuration
+
+#### Standard Kubernetes Ingress
+
+```yaml
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - host: podscope.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: podscope-tls
+      hosts:
+        - podscope.example.com
+```
+
+#### Tailscale Ingress (Optional)
+
+For secure external access via Tailscale network (requires Tailscale Operator):
+
+```yaml
+tailscale:
+  enabled: true
+  hostname: "podscope"
+  tags: "tag:k8s"
+```
+
+### RBAC Configuration
+
+By default, PodScope creates a ServiceAccount with necessary ClusterRole permissions. To use an existing ServiceAccount:
+
+```yaml
+serviceAccount:
+  create: false
+  name: "existing-service-account"
+
+rbac:
+  create: false
+```
+
+To add additional permissions:
+
+```yaml
+rbac:
+  create: true
+  additionalRules:
+    - apiGroups: ["custom.example.com"]
+      resources: ["customresources"]
+      verbs: ["get", "list", "watch"]
+```
+
+## Accessing the Dashboard
+
+After installation, access PodScope based on your configuration:
+
+### Via ClusterIP (default)
+
+Port-forward to access locally:
 
 ```bash
-# Kubernetes Configuration
-# Leave empty to use current kubectl context, or specify a context name
-KUBECTL_CONTEXT=""
-
-# Prometheus/VictoriaMetrics URL (required)
-PROMETHEUS_URL="http://prometheus.monitoring.svc.cluster.local:9090"
-
-# Victoria Metrics URL (optional, if different from Prometheus)
-VICTORIA_METRICS_URL=""
-
-# Grafana API URL (optional, for integration features)
-GRAFANA_URL=""
-
-# Redis/BullMQ Configuration (optional)
-# Format: name:host:port or name:host:port:password
-# Comma-separated for multiple instances
-REDIS_INSTANCES="myapp:redis.default.svc.cluster.local:6379"
-
-# API Security
-KUBECTL_EXEC_RATE_LIMIT="10"  # Requests per minute for exec endpoint
+kubectl port-forward svc/podscope 3000:80
 ```
+
+Navigate to [http://localhost:3000](http://localhost:3000)
+
+### Via Ingress
+
+Access via your configured hostname (e.g., `https://podscope.example.com`)
+
+### Via Tailscale
+
+Access via your Tailscale hostname (e.g., `https://podscope.your-tailnet.ts.net`)
+
+## Usage
 
 ### Dashboard Configuration
 
-The dashboard layout and component configuration is stored in your browser's localStorage. You can:
+The dashboard layout and components are configured in your browser's localStorage:
 
-- Add/remove dashboard components
-- Resize and reposition panels via drag-and-drop
-- Configure individual component settings (namespace filters, refresh intervals, etc.)
-- Save multiple dashboard configurations
-- Export/import dashboard configs via the Settings page
+- **Add Components** - Click "Add Component" to add monitoring panels
+- **Configure Panels** - Click settings icon on each panel to customize
+- **Rearrange** - Drag panels to reposition
+- **Resize** - Drag panel corners to resize
+- **Save/Load** - Export/import dashboard configurations via Settings
 
-## Deployment
+### Available Components
 
-### Kubernetes Deployment
+- **Pod List** - View and monitor pod status, restarts, and resource usage
+- **Node Overview** - Cluster node health and capacity
+- **Deployment Status** - Track deployment rollouts and replica counts
+- **Service Endpoints** - Monitor service availability
+- **PromQL Query** - Execute custom Prometheus queries
+- **Queue Monitor** - BullMQ job queue metrics and failed jobs
+- **Resource Charts** - CPU, memory, and network usage graphs
+- **Event Stream** - Real-time Kubernetes events
 
-For production Kubernetes deployment, including RBAC configuration, Ingress setup, and security best practices, see the comprehensive [DEPLOYMENT.md](./DEPLOYMENT.md) guide.
+### PromQL Macros
 
-**Quick deployment:**
+PodScope includes a macro system for PromQL queries:
 
-1. Build and push Docker image:
-   ```bash
-   docker build -t ghcr.io/kadajett/podscope:latest .
-   docker push ghcr.io/kadajett/podscope:latest
-   ```
+- `@namespace` - Current selected namespace
+- `@pod` - Selected pod name
+- `@node` - Selected node name
+- Custom macros can be defined in component settings
 
-2. Update `k8s/deployment.yaml` with your image:
-   ```yaml
-   image: ghcr.io/kadajett/podscope:latest
-   ```
-
-3. Apply Kubernetes manifests:
-   ```bash
-   kubectl apply -f k8s/
-   ```
-
-### Docker Deployment
-
-Run locally using Docker:
+## Upgrading
 
 ```bash
-docker build -t podscope .
-docker run -p 3000:3000 \
-  -e PROMETHEUS_URL="http://your-prometheus:9090" \
-  -v ~/.kube/config:/app/.kube/config:ro \
-  podscope
+# Update to latest version
+helm upgrade podscope oci://ghcr.io/kadajett/charts/podscope \
+  --reuse-values
+
+# Update with new configuration
+helm upgrade podscope oci://ghcr.io/kadajett/charts/podscope \
+  --values values.yaml
 ```
 
-## Architecture
-
-### Tech Stack
-
-- **Frontend**: Next.js 15 (App Router), React 19, TailwindCSS, shadcn/ui
-- **State Management**: React Query (TanStack Query) for server state, Zustand for client state
-- **Kubernetes Client**: @kubernetes/client-node
-- **Validation**: Zod schemas with TypeScript
-- **Queue Monitoring**: ioredis for Redis connections
-
-### Key Components
-
-- **Query Resolver** - Processes PromQL queries with macro expansion
-- **Kubernetes Client** - Secure wrapper around kubectl with command whitelisting
-- **Queue Registry** - Dynamic BullMQ queue discovery and monitoring
-- **Component Registry** - Extensible dashboard component system
-- **Config Storage** - Browser-based configuration persistence
-
-### Security Features
-
-- Command whitelist for kubectl operations (no arbitrary command execution)
-- Argument blacklist (blocks `--token`, `--password`, etc.)
-- Rate limiting on sensitive API endpoints
-- RBAC-ready with minimal required permissions
-- No credential storage (uses kubectl context)
-
-## Development
-
-### Available Scripts
+## Uninstalling
 
 ```bash
-npm run dev      # Start development server
-npm run build    # Build for production
-npm run start    # Start production server
-npm run lint     # Run ESLint
+helm uninstall podscope
 ```
 
-### Project Structure
+## Troubleshooting
 
-```
-src/
-├── app/              # Next.js app router pages and API routes
-│   ├── api/         # REST API endpoints (kubernetes, prometheus, queues)
-│   └── docs/        # Auto-generated documentation
-├── components/       # React components
-│   ├── dashboard/   # Dashboard-specific components
-│   ├── macro/       # PromQL macro components
-│   └── ui/          # Reusable UI components (shadcn/ui)
-├── config/          # Configuration schemas and defaults
-├── hooks/           # React hooks (React Query)
-├── lib/             # Core library code
-│   ├── kubernetes.ts    # K8s client wrapper
-│   ├── prometheus.ts    # Prometheus client
-│   ├── query-resolver.ts # PromQL query processing
-│   └── queues/          # BullMQ monitoring
-├── providers/       # React context providers
-└── types/           # TypeScript type definitions
+### Cannot connect to Kubernetes API
+
+Check RBAC permissions:
+
+```bash
+kubectl describe clusterrole podscope
+kubectl describe clusterrolebinding podscope
 ```
 
-### Adding Custom Components
+### Cannot query Prometheus
 
-See the auto-generated documentation at `/docs` for detailed guides on:
+Verify Prometheus URL is accessible from within the cluster:
 
-- Creating custom dashboard components
-- Adding new queue providers
-- Extending the PromQL macro system
-- Implementing custom Kubernetes queries
+```bash
+kubectl exec -it deployment/podscope -- curl http://prometheus.monitoring.svc.cluster.local:9090/-/healthy
+```
 
-## Contributing
+### Dashboard not loading
 
-Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
+Check pod logs:
 
-### Guidelines
+```bash
+kubectl logs -f deployment/podscope
+```
 
-- Follow the existing code style (ESLint configuration)
-- Add TypeScript types for all new code
-- Test your changes thoroughly
-- Update documentation as needed
+Check pod status:
+
+```bash
+kubectl get pods -l app.kubernetes.io/name=podscope
+```
+
+## Support and Documentation
+
+- **GitHub Issues**: [https://github.com/Kadajett/PodScope/issues](https://github.com/Kadajett/PodScope/issues)
+- **Deployment Guide**: [DEPLOYMENT.md](./DEPLOYMENT.md)
+- **Contributing Guide**: [CONTRIBUTORS.md](./CONTRIBUTORS.md)
+- **In-App Documentation**: Navigate to `/docs` in the dashboard for component guides
 
 ## License
 

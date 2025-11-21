@@ -1,0 +1,58 @@
+name: Publish Helm Chart
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  CHART_NAME: podscope
+
+jobs:
+  publish-helm-chart:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.14.0'
+
+      - name: Log in to GitHub Container Registry
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ${{ env.REGISTRY }} --username ${{ github.actor }} --password-stdin
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          # Remove 'v' prefix from tag
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Publishing chart version: $VERSION"
+
+      - name: Update Chart.yaml version
+        run: |
+          sed -i "s/^version:.*/version: ${{ steps.version.outputs.version }}/" charts/${{ env.CHART_NAME }}/Chart.yaml
+          sed -i "s/^appVersion:.*/appVersion: \"${{ steps.version.outputs.version }}\"/" charts/${{ env.CHART_NAME }}/Chart.yaml
+          cat charts/${{ env.CHART_NAME }}/Chart.yaml
+
+      - name: Package Helm chart
+        run: |
+          helm package charts/${{ env.CHART_NAME }} --destination .
+
+      - name: Push Helm chart to OCI registry
+        run: |
+          helm push ${{ env.CHART_NAME }}-${{ steps.version.outputs.version }}.tgz oci://${{ env.REGISTRY }}/${{ github.repository_owner }}/charts
+
+      - name: Logout from registry
+        if: always()
+        run: |
+          helm registry logout ${{ env.REGISTRY }}
