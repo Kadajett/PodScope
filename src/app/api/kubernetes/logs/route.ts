@@ -56,10 +56,11 @@ export async function GET(request: NextRequest) {
     });
 
     // Handle response - might be response.body or response directly
+    const responseUnknown: unknown = logsResponse;
     const logData =
-      typeof logsResponse === "object" && logsResponse !== null && "body" in logsResponse
-        ? logsResponse.body
-        : logsResponse;
+      typeof responseUnknown === "object" && responseUnknown !== null && "body" in responseUnknown
+        ? (responseUnknown as { body: unknown }).body
+        : responseUnknown;
     const logText = typeof logData === "string" ? logData : String(logData);
     const lines = logText.split("\n").filter((line) => line.trim());
 
