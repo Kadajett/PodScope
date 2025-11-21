@@ -87,7 +87,10 @@ export async function executeKubeQuery(query: KubeQuery): Promise<{
  * Apply field selector filtering (client-side)
  * Supports simple field selectors like "status.phase=Running"
  */
-function applyFieldSelector(items: Array<KubernetesPod | KubernetesService | KubernetesNode | KubernetesNamespace>, fieldSelector: string): Array<KubernetesPod | KubernetesService | KubernetesNode | KubernetesNamespace> {
+function applyFieldSelector(
+  items: Array<KubernetesPod | KubernetesService | KubernetesNode | KubernetesNamespace>,
+  fieldSelector: string
+): Array<KubernetesPod | KubernetesService | KubernetesNode | KubernetesNamespace> {
   const selectors = fieldSelector.split(",");
 
   return items.filter((item) => {
@@ -105,7 +108,10 @@ function applyFieldSelector(items: Array<KubernetesPod | KubernetesService | Kub
  * Apply label selector filtering (client-side)
  * Supports simple label selectors like "app=nginx,env=prod"
  */
-function applyLabelSelector(items: Array<KubernetesPod | KubernetesService | KubernetesNode | KubernetesNamespace>, labelSelector: string): Array<KubernetesPod | KubernetesService | KubernetesNode | KubernetesNamespace> {
+function applyLabelSelector(
+  items: Array<KubernetesPod | KubernetesService | KubernetesNode | KubernetesNamespace>,
+  labelSelector: string
+): Array<KubernetesPod | KubernetesService | KubernetesNode | KubernetesNamespace> {
   const selectors = labelSelector.split(",");
 
   return items.filter((item) => {

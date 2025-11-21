@@ -160,9 +160,7 @@ export function NamespacePodExplorer({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() =>
-                  setExpandedNamespaces(new Set(groupedData.map((g) => g.namespace)))
-                }
+                onClick={() => setExpandedNamespaces(new Set(groupedData.map((g) => g.namespace)))}
               >
                 Expand All
               </Button>
@@ -195,7 +193,9 @@ export function NamespacePodExplorer({
 
         <div className="flex-1 overflow-auto">
           {filteredData.map((nsData) => {
-            const totalPods = nsData.replicaSets.reduce((acc, rs) => acc + rs.pods.length, 0) + nsData.standalonePods.length;
+            const totalPods =
+              nsData.replicaSets.reduce((acc, rs) => acc + rs.pods.length, 0) +
+              nsData.standalonePods.length;
 
             return (
               <div key={nsData.namespace}>
@@ -471,7 +471,11 @@ export function NamespacePodExplorer({
                               />
 
                               <div className="flex justify-end">
-                                <Button variant="outline" size="sm" onClick={() => setSelectedPod(pod)}>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setSelectedPod(pod)}
+                                >
                                   <Expand className="mr-2 h-4 w-4" />
                                   Full Details
                                 </Button>

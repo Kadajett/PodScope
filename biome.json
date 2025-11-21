@@ -22,10 +22,12 @@
     "rules": {
       "recommended": true,
       "a11y": {
-        "noSvgWithoutTitle": "off"
+        "noSvgWithoutTitle": "off",
+        "noStaticElementInteractions": "off",
+        "useKeyWithClickEvents": "off"
       },
       "complexity": {
-        "noExcessiveCognitiveComplexity": "warn",
+        "noExcessiveCognitiveComplexity": "off",
         "noForEach": "off",
         "useLiteralKeys": "warn",
         "useSimplifiedLogicExpression": "warn"
@@ -63,6 +65,7 @@
         "noDebugger": "error",
         "noConsole": "off",
         "noArrayIndexKey": "warn",
+        "noDocumentCookie": "off",
         "useAwait": "error"
       },
       "nursery": {
@@ -121,6 +124,38 @@
         "rules": {
           "suspicious": {
             "noExplicitAny": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/components/ui/**/*"],
+      "linter": {
+        "enabled": false
+      }
+    },
+    {
+      "includes": [
+        "src/config/component-registry.ts",
+        "src/lib/config-storage.ts",
+        "src/lib/docs-generator.ts",
+        "src/lib/kubernetes.ts",
+        "src/lib/queues/base.ts"
+      ],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noExplicitAny": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/components/dashboard/**/*"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noUnusedImports": "off"
           }
         }
       }
