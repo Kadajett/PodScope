@@ -1,5 +1,6 @@
-# ArtifactHub repository metadata file
-repositoryID: <YOUR_REPOSITORY_ID>
+# Artifact Hub repository metadata file
+# https://artifacthub.io/docs/topics/repositories/#artifacthub-metadata-file
+repositoryID:
 owners:
   - name: Kadajett
-    email: jeremy@example.com
+    email: jeremy.ryan.stover@gmail.com
