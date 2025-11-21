@@ -2,6 +2,8 @@
 
 A fast, lightweight Kubernetes monitoring dashboard. Built with Next.js 15, React 19, and TypeScript, this dashboard provides real-time visibility into your Kubernetes infrastructure and Prometheus metrics without the complexity of traditional monitoring solutions.
 
+Made with ❤️ by [Kadajett](https://github.com/Kadajett)
+
 ## Features
 
 - **Real-time Kubernetes Monitoring** - Monitor pods, nodes, deployments, services, and other cluster resources
