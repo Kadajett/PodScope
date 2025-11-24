@@ -19,8 +19,15 @@ COPY . .
 # Set environment variables for build
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# Cache bust arg - changes when package-lock.json or next.config.ts change
+ARG CACHE_BUST
+RUN echo "Cache bust: ${CACHE_BUST:-none}"
+
 # Build the application
 RUN npm run build
+
+# Verify standalone output was generated
+RUN test -f .next/standalone/server.js || (echo "ERROR: standalone build failed - server.js not found" && exit 1)
 
 # Production image, copy all the files and run next
 FROM base AS runner
