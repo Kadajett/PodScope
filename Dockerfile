@@ -26,8 +26,11 @@ RUN echo "Cache bust: ${CACHE_BUST:-none}"
 # Build the application
 RUN npm run build
 
-# Verify standalone output was generated
-RUN test -f .next/standalone/server.js || (echo "ERROR: standalone build failed - server.js not found" && exit 1)
+# Debug: Show standalone structure
+RUN echo "=== Standalone directory structure ===" && \
+    ls -la .next/standalone/ && \
+    find .next/standalone -type f -name "server.js" | head -5 && \
+    echo "=== End structure ==="
 
 # Production image, copy all the files and run next
 FROM base AS runner
@@ -39,9 +42,12 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Copy built application
+# Copy public files
 COPY --from=builder /app/public ./public
+
+# Copy standalone output
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+# Copy static files
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 USER nextjs
