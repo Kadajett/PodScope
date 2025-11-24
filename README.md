@@ -25,21 +25,32 @@ Made with ❤️ by [Kadajett](https://github.com/Kadajett)
 
 ## Installation
 
-### Install via Helm
+### Quick Start (Helm)
 
-Install PodScope from GitHub Container Registry:
+Install PodScope from GitHub Container Registry with a single command:
 
 ```bash
 helm install podscope oci://ghcr.io/kadajett/charts/podscope \
+  --namespace podscope \
+  --create-namespace \
   --set config.prometheusUrl="http://prometheus.monitoring.svc.cluster.local:9090"
 ```
 
 To install a specific version:
 
 ```bash
-helm install podscope oci://ghcr.io/kadajett/charts/podscope --version 0.1.1 \
+helm install podscope oci://ghcr.io/kadajett/charts/podscope \
+  --version 0.1.5 \
+  --namespace podscope \
+  --create-namespace \
   --set config.prometheusUrl="http://prometheus.monitoring.svc.cluster.local:9090"
 ```
+
+### Helm Chart Location
+
+- **OCI Registry**: `oci://ghcr.io/kadajett/charts/podscope`
+- **Latest Version**: `0.1.5`
+- **Docker Image**: `ghcr.io/kadajett/podscope:0.1.5`
 
 ### Install with Custom Values
 
@@ -197,6 +208,38 @@ rbac:
       verbs: ["get", "list", "watch"]
 ```
 
+### Environment Variables Reference
+
+The following environment variables are set via Helm values under `config.*`:
+
+| Helm Value | Environment Variable | Required | Description |
+|------------|---------------------|----------|-------------|
+| `config.prometheusUrl` | `PROMETHEUS_URL` | **Yes** | Prometheus/VictoriaMetrics URL for metrics queries |
+| `config.victoriaMetricsUrl` | `VICTORIA_METRICS_URL` | No | Alternative metrics backend URL |
+| `config.grafanaUrl` | `GRAFANA_URL` | No | Grafana URL for integration features |
+| `config.redisInstances` | `REDIS_INSTANCES` | No | BullMQ Redis connections (format: `name:host:port[:password]`) |
+| `config.kubectlExecRateLimit` | `KUBECTL_EXEC_RATE_LIMIT` | No | Rate limit for exec operations (default: 10/min) |
+| `config.kubectlContext` | `KUBECTL_CONTEXT` | No | Kubernetes context (leave empty for in-cluster) |
+| `config.logging.level` | `LOG_LEVEL` | No | Log level: trace, debug, info, warn, error, fatal |
+
+### All Helm Values
+
+| Value | Default | Description |
+|-------|---------|-------------|
+| `replicaCount` | `1` | Number of replicas |
+| `image.repository` | `ghcr.io/kadajett/podscope` | Docker image repository |
+| `image.tag` | `""` (uses appVersion) | Docker image tag |
+| `image.pullPolicy` | `Always` | Image pull policy |
+| `service.type` | `ClusterIP` | Kubernetes service type |
+| `service.port` | `80` | Service port |
+| `service.targetPort` | `3000` | Container port |
+| `ingress.enabled` | `false` | Enable ingress |
+| `tailscale.enabled` | `false` | Enable Tailscale ingress |
+| `resources.requests.memory` | `256Mi` | Memory request |
+| `resources.requests.cpu` | `100m` | CPU request |
+| `resources.limits.memory` | `512Mi` | Memory limit |
+| `resources.limits.cpu` | `500m` | CPU limit |
+
 ## Accessing the Dashboard
 
 After installation, access PodScope based on your configuration:
@@ -256,20 +299,46 @@ PodScope includes a macro system for PromQL queries:
 ```bash
 # Update to latest version
 helm upgrade podscope oci://ghcr.io/kadajett/charts/podscope \
+  --namespace podscope \
+  --reuse-values
+
+# Update to specific version
+helm upgrade podscope oci://ghcr.io/kadajett/charts/podscope \
+  --version 0.1.5 \
+  --namespace podscope \
   --reuse-values
 
 # Update with new configuration
 helm upgrade podscope oci://ghcr.io/kadajett/charts/podscope \
+  --namespace podscope \
   --values values.yaml
 ```
 
 ## Uninstalling
 
 ```bash
-helm uninstall podscope
+helm uninstall podscope --namespace podscope
+
+# Optionally delete the namespace
+kubectl delete namespace podscope
 ```
 
 ## Troubleshooting
+
+### Verify Installation
+
+After installing, verify the deployment is running:
+
+```bash
+# Check pod status
+kubectl get pods -n podscope
+
+# Check logs
+kubectl logs -f deployment/podscope -n podscope
+
+# Verify service is running
+kubectl get svc -n podscope
+```
 
 ### Cannot connect to Kubernetes API
 
@@ -285,7 +354,7 @@ kubectl describe clusterrolebinding podscope
 Verify Prometheus URL is accessible from within the cluster:
 
 ```bash
-kubectl exec -it deployment/podscope -- curl http://prometheus.monitoring.svc.cluster.local:9090/-/healthy
+kubectl exec -it deployment/podscope -n podscope -- wget -qO- http://prometheus.monitoring.svc.cluster.local:9090/-/healthy
 ```
 
 ### Dashboard not loading
@@ -293,14 +362,27 @@ kubectl exec -it deployment/podscope -- curl http://prometheus.monitoring.svc.cl
 Check pod logs:
 
 ```bash
-kubectl logs -f deployment/podscope
+kubectl logs -f deployment/podscope -n podscope
 ```
 
 Check pod status:
 
 ```bash
-kubectl get pods -l app.kubernetes.io/name=podscope
+kubectl get pods -n podscope -l app.kubernetes.io/name=podscope
 ```
+
+### Pod in CrashLoopBackOff
+
+Check the pod logs for errors:
+
+```bash
+kubectl logs -n podscope -l app.kubernetes.io/name=podscope --tail=50
+```
+
+Common causes:
+- Invalid Prometheus URL (pod can't reach Prometheus)
+- Missing required configuration
+- Resource limits too low
 
 ## Support and Documentation
 
