@@ -31,6 +31,30 @@ jobs:
         with:
           version: 'v3.14.0'
 
+      - name: Create gh-pages branch if it doesn't exist
+        run: |
+          if ! git ls-remote --exit-code --heads origin gh-pages > /dev/null 2>&1; then
+            echo "Creating gh-pages branch..."
+            git checkout --orphan gh-pages
+            git rm -rf .
+            cat > index.yaml << 'EOF'
+          apiVersion: v1
+          entries: {}
+          generated: "2025-01-01T00:00:00Z"
+          EOF
+            cat > artifacthub-repo.yml << 'EOF'
+          # Artifact Hub repository metadata file
+          repositoryID:
+          owners:
+            - name: Kadajett
+              email: jeremy.ryan.stover@gmail.com
+          EOF
+            git add index.yaml artifacthub-repo.yml
+            git commit -m "Initialize GitHub Pages for Helm repository"
+            git push origin gh-pages
+            git checkout main
+          fi
+
       - name: Run chart-releaser
         uses: helm/chart-releaser-action@v1.6.0
         env:
@@ -40,26 +64,3 @@ jobs:
           pages_branch: gh-pages
           skip_existing: true
 
-      - name: Ensure artifacthub-repo.yml exists on gh-pages
-        run: |
-          # Only run if gh-pages branch exists
-          if git ls-remote --exit-code --heads origin gh-pages > /dev/null 2>&1; then
-            git fetch origin gh-pages:gh-pages
-            git checkout gh-pages
-            if [ ! -f artifacthub-repo.yml ]; then
-              cat > artifacthub-repo.yml << 'EOF'
-          # Artifact Hub repository metadata file
-          # https://artifacthub.io/docs/topics/repositories/#artifacthub-metadata-file
-          repositoryID:
-          owners:
-            - name: Kadajett
-              email: jeremy.ryan.stover@gmail.com
-          EOF
-              git add artifacthub-repo.yml
-              git commit -m "Add artifacthub-repo.yml for Artifact Hub verification"
-              git push origin gh-pages
-            fi
-            git checkout -
-          else
-            echo "gh-pages branch does not exist yet. It will be created on first chart release."
-          fi
