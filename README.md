@@ -4,6 +4,8 @@ A fast, lightweight Kubernetes monitoring dashboard. Built with Next.js 15, Reac
 
 Made with ❤️ by [Kadajett](https://github.com/Kadajett)
 
+[![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/podscope)](https://artifacthub.io/packages/search?repo=podscope)
+
 ## Features
 
 - **Real-time Kubernetes Monitoring** - Monitor pods, nodes, deployments, services, and other cluster resources
