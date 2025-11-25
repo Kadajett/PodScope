@@ -1,0 +1,59 @@
+name: Release Helm Chart to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'charts/**'
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.14.0'
+
+      - name: Run chart-releaser
+        uses: helm/chart-releaser-action@v1.6.0
+        env:
+          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+        with:
+          charts_dir: charts
+          pages_branch: gh-pages
+
+      - name: Ensure artifacthub-repo.yml exists on gh-pages
+        run: |
+          git fetch origin gh-pages:gh-pages || true
+          git checkout gh-pages
+          if [ ! -f artifacthub-repo.yml ]; then
+            cat > artifacthub-repo.yml << 'EOF'
+          # Artifact Hub repository metadata file
+          # https://artifacthub.io/docs/topics/repositories/#artifacthub-metadata-file
+          repositoryID:
+          owners:
+            - name: Kadajett
+              email: jeremy.ryan.stover@gmail.com
+          EOF
+            git add artifacthub-repo.yml
+            git commit -m "Add artifacthub-repo.yml for Artifact Hub verification" || true
+            git push origin gh-pages
+          fi
+          git checkout -
