@@ -2,8 +2,8 @@ apiVersion: v2
 name: podscope
 description: Lightweight Kubernetes monitoring dashboard with Prometheus integration
 type: application
-version: 0.1.9
-appVersion: "0.1.9"
+version: 0.2.0
+appVersion: "0.2.0"
 
 keywords:
   - kubernetes

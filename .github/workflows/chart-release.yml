@@ -2,10 +2,8 @@ name: Release Helm Chart to GitHub Pages
 
 on:
   push:
-    branches:
-      - main
-    paths:
-      - 'charts/**'
+    tags:
+      - 'v*.*.*'
   workflow_dispatch:
 
 jobs:
