@@ -38,13 +38,16 @@ jobs:
         with:
           charts_dir: charts
           pages_branch: gh-pages
+          skip_existing: true
 
       - name: Ensure artifacthub-repo.yml exists on gh-pages
         run: |
-          git fetch origin gh-pages:gh-pages || true
-          git checkout gh-pages
-          if [ ! -f artifacthub-repo.yml ]; then
-            cat > artifacthub-repo.yml << 'EOF'
+          # Only run if gh-pages branch exists
+          if git ls-remote --exit-code --heads origin gh-pages > /dev/null 2>&1; then
+            git fetch origin gh-pages:gh-pages
+            git checkout gh-pages
+            if [ ! -f artifacthub-repo.yml ]; then
+              cat > artifacthub-repo.yml << 'EOF'
           # Artifact Hub repository metadata file
           # https://artifacthub.io/docs/topics/repositories/#artifacthub-metadata-file
           repositoryID:
@@ -52,8 +55,11 @@ jobs:
             - name: Kadajett
               email: jeremy.ryan.stover@gmail.com
           EOF
-            git add artifacthub-repo.yml
-            git commit -m "Add artifacthub-repo.yml for Artifact Hub verification" || true
-            git push origin gh-pages
+              git add artifacthub-repo.yml
+              git commit -m "Add artifacthub-repo.yml for Artifact Hub verification"
+              git push origin gh-pages
+            fi
+            git checkout -
+          else
+            echo "gh-pages branch does not exist yet. It will be created on first chart release."
           fi
-          git checkout -
