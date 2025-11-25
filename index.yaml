@@ -14,6 +14,44 @@ entries:
       artifacthub.io/recommendations: |
         - url: https://prometheus.io/
     apiVersion: v2
+    appVersion: 0.2.0
+    created: "2025-11-25T18:34:03.589663928Z"
+    description: Lightweight Kubernetes monitoring dashboard with Prometheus integration
+    digest: d67c64a6698f7be9f00e5318e9a241fdbf8f88d0ac2d43fb7680fd781a40e788
+    home: https://github.com/Kadajett/PodScope
+    icon: https://raw.githubusercontent.com/Kadajett/PodScope/main/public/icon.png
+    keywords:
+    - kubernetes
+    - monitoring
+    - prometheus
+    - dashboard
+    - observability
+    - victoriametrics
+    - bullmq
+    maintainers:
+    - email: jeremy.ryan.stover@gmail.com
+      name: Kadajett
+      url: https://github.com/Kadajett
+    name: podscope
+    sources:
+    - https://github.com/Kadajett/PodScope
+    type: application
+    urls:
+    - https://github.com/Kadajett/PodScope/releases/download/podscope-0.2.0/podscope-0.2.0.tgz
+    version: 0.2.0
+  - annotations:
+      artifacthub.io/category: monitoring-logging
+      artifacthub.io/license: BSL-1.1
+      artifacthub.io/links: |
+        - name: GitHub
+          url: https://github.com/Kadajett/PodScope
+        - name: Documentation
+          url: https://github.com/Kadajett/PodScope#readme
+      artifacthub.io/operator: "false"
+      artifacthub.io/prerelease: "false"
+      artifacthub.io/recommendations: |
+        - url: https://prometheus.io/
+    apiVersion: v2
     appVersion: 0.1.9
     created: "2025-11-25T18:13:26.497828216Z"
     description: Lightweight Kubernetes monitoring dashboard with Prometheus integration
@@ -39,4 +77,4 @@ entries:
     urls:
     - https://github.com/Kadajett/PodScope/releases/download/podscope-0.1.9/podscope-0.1.9.tgz
     version: 0.1.9
-generated: "2025-11-25T18:13:26.497834868Z"
+generated: "2025-11-25T18:34:03.589673459Z"
