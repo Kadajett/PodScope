@@ -1,9 +1,12 @@
 import Redis from "ioredis";
+import type { RedisInstanceConfig } from "@/config/schema";
 import type { BullMQOverview, QueueJob, QueueStats, RedisInstance } from "@/types/bullmq";
 
-// Parse Redis instances from env
-export function getRedisInstances(): RedisInstance[] {
-  const instancesStr = process.env.REDIS_INSTANCES || "";
+/**
+ * Parse Redis instances from env var string
+ * Format: "name:host:port:password,name2:host2:port2:password2"
+ */
+export function parseRedisInstancesString(instancesStr: string): RedisInstance[] {
   if (!instancesStr) return [];
 
   return instancesStr.split(",").map((instance) => {
@@ -15,6 +18,57 @@ export function getRedisInstances(): RedisInstance[] {
       password: parts[3] || undefined,
     };
   });
+}
+
+/**
+ * Get Redis instances from environment variable
+ */
+export function getRedisInstancesFromEnv(envVar = "REDIS_INSTANCES"): RedisInstance[] {
+  const instancesStr = process.env[envVar] || "";
+  return parseRedisInstancesString(instancesStr);
+}
+
+/**
+ * Convert config-based instances to RedisInstance format
+ */
+export function configToRedisInstances(instances: RedisInstanceConfig[]): RedisInstance[] {
+  return instances.map((inst) => ({
+    name: inst.name || "default",
+    host: inst.host,
+    port: inst.port || 6379,
+    password: inst.password,
+  }));
+}
+
+/**
+ * Get Redis instances from various sources
+ * Priority: direct instances > envVar > useEnv > default REDIS_INSTANCES
+ */
+export function getRedisInstances(config?: {
+  instances?: RedisInstanceConfig[] | string;
+  envVar?: string;
+  useEnv?: boolean;
+}): RedisInstance[] {
+  // If config provided with direct instances array
+  if (config?.instances) {
+    if (Array.isArray(config.instances)) {
+      return configToRedisInstances(config.instances);
+    }
+    // Legacy string format
+    return parseRedisInstancesString(config.instances);
+  }
+
+  // If config specifies a custom env var
+  if (config?.envVar) {
+    return getRedisInstancesFromEnv(config.envVar);
+  }
+
+  // If explicitly using env (or no config provided)
+  if (config?.useEnv !== false) {
+    return getRedisInstancesFromEnv();
+  }
+
+  return [];
 }
 
 // Create Redis client with timeout

@@ -15,8 +15,35 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getQueueHealth, useBullMQOverview } from "@/hooks/use-bullmq";
+import { getQueueHealth, type RedisConnectionConfig, useBullMQOverview } from "@/hooks/use-bullmq";
 import type { QueueStats } from "@/types/bullmq";
+
+/**
+ * BullMQ Monitor Props
+ *
+ * Connection config can be provided in several ways:
+ * 1. Direct instances: { instances: [{ host: "localhost", port: 6379 }] }
+ * 2. Env var reference: { envVar: "MY_REDIS_URL" }
+ * 3. Use default env: { useEnv: true } or omit connection config
+ *
+ * Example config in dashboard JSON:
+ * {
+ *   "component": "BullMQMonitor",
+ *   "config": {
+ *     "title": "My Queues",
+ *     "connection": {
+ *       "instances": [
+ *         { "name": "prod", "host": "redis.example.com", "port": 6379, "password": "secret" }
+ *       ]
+ *     }
+ *   }
+ * }
+ */
+export interface BullMQMonitorProps {
+  title?: string;
+  showHeader?: boolean;
+  connection?: RedisConnectionConfig;
+}
 
 type QueueChartDatum = {
   status: string;
@@ -169,14 +196,14 @@ function QueueDistributionChart({ queues }: { queues: QueueStats[] }) {
   );
 }
 
-export function BullMQMonitor() {
-  const { data: overviews, isLoading, error } = useBullMQOverview();
+export function BullMQMonitor({ title = "BullMQ Queues", connection }: BullMQMonitorProps) {
+  const { data: overviews, isLoading, error } = useBullMQOverview(connection);
   const [selectedQueue, setSelectedQueue] = useState<QueueStats | null>(null);
 
   if (isLoading) {
     return (
       <div className="px-6 py-4">
-        <h2 className="text-lg font-semibold mb-4">BullMQ Queues</h2>
+        <h2 className="text-lg font-semibold mb-4">{title}</h2>
         <div className="space-y-4">
           <Skeleton className="h-[100px]" />
           <Skeleton className="h-[120px]" />
@@ -188,7 +215,7 @@ export function BullMQMonitor() {
   if (error || !overviews || overviews.length === 0) {
     return (
       <div className="px-6 py-4">
-        <h2 className="text-lg font-semibold mb-4">BullMQ Queues</h2>
+        <h2 className="text-lg font-semibold mb-4">{title}</h2>
         <Card className="border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20">
           <CardContent className="pt-6">
             <div className="flex items-center gap-2">
@@ -214,7 +241,7 @@ export function BullMQMonitor() {
   if (!instance.connected) {
     return (
       <div className="px-6 py-4">
-        <h2 className="text-lg font-semibold mb-4">BullMQ Queues</h2>
+        <h2 className="text-lg font-semibold mb-4">{title}</h2>
         <Card className="border-red-200 bg-red-50 dark:bg-red-950/20">
           <CardContent className="pt-6">
             <div className="flex items-center gap-2">
@@ -233,7 +260,7 @@ export function BullMQMonitor() {
   if (instance.queues.length === 0) {
     return (
       <div className="px-6 py-4">
-        <h2 className="text-lg font-semibold mb-4">BullMQ Queues</h2>
+        <h2 className="text-lg font-semibold mb-4">{title}</h2>
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-2">
@@ -253,7 +280,7 @@ export function BullMQMonitor() {
     <>
       <div className="px-6 py-4">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">BullMQ Queues</h2>
+          <h2 className="text-lg font-semibold">{title}</h2>
           <Badge
             variant="outline"
             className={

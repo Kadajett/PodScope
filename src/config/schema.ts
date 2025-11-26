@@ -56,8 +56,36 @@ export type KubeQueryLibrary = z.infer<typeof KubeQueryLibrarySchema>;
 /**
  * Queue Provider Connection Schemas
  */
+
+/**
+ * Redis Instance Schema - direct connection configuration
+ */
+export const RedisInstanceSchema = z.object({
+  name: z.string().default("default"), // Display name for this instance
+  host: z.string(), // Redis host
+  port: z.number().default(6379), // Redis port
+  password: z.string().optional(), // Redis password (optional)
+  db: z.number().optional(), // Redis database number (optional)
+});
+
+export type RedisInstanceConfig = z.infer<typeof RedisInstanceSchema>;
+
+/**
+ * BullMQ Connection Schema
+ * Supports three modes:
+ * 1. Direct instances array: [{ name, host, port, password }]
+ * 2. Env var reference: { envVar: "REDIS_INSTANCES" }
+ * 3. Legacy string format: "name:host:port:password,..."
+ */
 export const BullMQConnectionSchema = z.object({
-  instances: z.string(), // References REDIS_INSTANCES env var
+  instances: z
+    .union([
+      z.array(RedisInstanceSchema), // Direct config array
+      z.string(), // Legacy format or env var name
+    ])
+    .optional(),
+  envVar: z.string().optional(), // Reference to env var (e.g., "REDIS_INSTANCES")
+  useEnv: z.boolean().optional(), // If true, use REDIS_INSTANCES from env
 });
 
 export const RabbitMQConnectionSchema = z.object({

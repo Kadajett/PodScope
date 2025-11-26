@@ -8,7 +8,39 @@ import type {
   QueueStats,
 } from "@/types/bullmq";
 
-async function fetchBullMQOverview() {
+export interface RedisConnectionConfig {
+  instances?: Array<{
+    name?: string;
+    host: string;
+    port?: number;
+    password?: string;
+  }>;
+  envVar?: string;
+  useEnv?: boolean;
+}
+
+async function fetchBullMQOverview(config?: RedisConnectionConfig) {
+  // If config with instances, use POST
+  if (config?.instances && config.instances.length > 0) {
+    const res = await fetch("/api/bullmq/overview", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ instances: config.instances }),
+    });
+    const data: BullMQApiResponse<{ instances: BullMQOverview[] }> = await res.json();
+    if (!data.success) throw new Error(data.error);
+    return data.data?.instances;
+  }
+
+  // If envVar specified, pass as query param
+  if (config?.envVar) {
+    const res = await fetch(`/api/bullmq/overview?envVar=${encodeURIComponent(config.envVar)}`);
+    const data: BullMQApiResponse<{ instances: BullMQOverview[] }> = await res.json();
+    if (!data.success) throw new Error(data.error);
+    return data.data?.instances;
+  }
+
+  // Default: use env var
   const res = await fetch("/api/bullmq/overview");
   const data: BullMQApiResponse<{ instances: BullMQOverview[] }> = await res.json();
   if (!data.success) throw new Error(data.error);
@@ -45,10 +77,10 @@ async function fetchQueueJobs(
   return data.data;
 }
 
-export function useBullMQOverview() {
+export function useBullMQOverview(config?: RedisConnectionConfig) {
   return useQuery({
-    queryKey: ["bullmq-overview"],
-    queryFn: fetchBullMQOverview,
+    queryKey: ["bullmq-overview", config],
+    queryFn: () => fetchBullMQOverview(config),
     refetchInterval: 10000, // Refresh every 10 seconds
     retry: 1,
   });
