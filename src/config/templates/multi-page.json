@@ -87,16 +87,16 @@
           "config": {
             "title": "Cluster Metrics",
             "showHeader": true,
-            "queryRefs": [
-              "promQueries.nodeMetrics.cpu_usage_v1-0-0",
-              "promQueries.nodeMetrics.memory_total_v1-0-0",
-              "promQueries.nodeMetrics.memory_available_v1-0-0",
-              "promQueries.clusterMetrics.node_count_v1-0-0",
-              "promQueries.clusterMetrics.running_pods_v1-0-0",
-              "promQueries.clusterMetrics.total_pods_v1-0-0",
-              "promQueries.clusterMetrics.total_cpu_cores_v1-0-0",
-              "promQueries.clusterMetrics.total_memory_bytes_v1-0-0"
-            ]
+            "queries": {
+              "cpuUsage": "promQueries.nodeMetrics.cpu_usage_v1-0-0",
+              "memoryTotal": "promQueries.nodeMetrics.memory_total_v1-0-0",
+              "memoryAvailable": "promQueries.nodeMetrics.memory_available_v1-0-0",
+              "nodeCount": "promQueries.clusterMetrics.node_count_v1-0-0",
+              "runningPods": "promQueries.clusterMetrics.running_pods_v1-0-0",
+              "totalPods": "promQueries.clusterMetrics.total_pods_v1-0-0",
+              "totalCpu": "promQueries.clusterMetrics.total_cpu_cores_v1-0-0",
+              "totalMemory": "promQueries.clusterMetrics.total_memory_bytes_v1-0-0"
+            }
           },
           "minW": 4,
           "minH": 3

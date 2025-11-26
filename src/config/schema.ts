@@ -196,13 +196,33 @@ export type DashboardConfig = z.infer<typeof DashboardConfigSchema>;
  * Base schema for component-specific configuration
  */
 export const ComponentPropsSchema = z.object({
-  queryRefs: z.array(z.string()).optional(), // Query references
+  queryRefs: z.array(z.string()).optional(), // Legacy: ordered query references (deprecated)
+  queries: z.record(z.string(), z.string()).optional(), // New: named query references (preferred)
   title: z.string().optional(), // Custom title
   refreshInterval: z.number().optional(), // Refresh rate in seconds
   showHeader: z.boolean().optional(), // Show/hide header
 });
 
 export type ComponentProps = z.infer<typeof ComponentPropsSchema>;
+
+/**
+ * Prometheus Node Metrics Query Keys
+ * Defines the expected query keys for PrometheusNodeMetrics component
+ */
+export const PrometheusNodeMetricsQueriesSchema = z
+  .object({
+    cpuUsage: z.string().optional(), // Node CPU usage percentage
+    memoryTotal: z.string().optional(), // Node memory total bytes
+    memoryAvailable: z.string().optional(), // Node memory available bytes
+    nodeCount: z.string().optional(), // Cluster node count
+    runningPods: z.string().optional(), // Running pods count
+    totalPods: z.string().optional(), // Total pods count
+    totalCpu: z.string().optional(), // Total CPU cores
+    totalMemory: z.string().optional(), // Total memory bytes
+  })
+  .passthrough(); // Allow additional custom queries
+
+export type PrometheusNodeMetricsQueries = z.infer<typeof PrometheusNodeMetricsQueriesSchema>;
 
 /**
  * Prometheus Query Component Config

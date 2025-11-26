@@ -2,31 +2,101 @@
 
 import { Activity, AlertTriangle, Cpu, HardDrive, MemoryStick, Server } from "lucide-react";
 import { useMemo } from "react";
-import type { z } from "zod";
 import { ClusterMetrics } from "@/components/dashboard/cluster-metrics";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { ComponentPropsSchema } from "@/config/schema";
+import type { PrometheusNodeMetricsQueries } from "@/config/schema";
 import { formatBytes, usePrometheusQuery } from "@/hooks/use-prometheus";
-import { useResolvedQueries } from "@/hooks/use-query-library";
+import { useResolvedQueryMap } from "@/hooks/use-query-library";
 
 /**
  * Prometheus Node Metrics Macro Component
  *
- * Query refs expected (in order):
- * 0: cpu_usage - Node CPU usage percentage
- * 1: memory_total - Node memory total bytes
- * 2: memory_available - Node memory available bytes
- * 3: node_count - Cluster node count
- * 4: running_pods - Running pods count
- * 5: total_pods - Total pods count
- * 6: total_cpu - Total CPU cores
- * 7: total_memory - Total memory bytes
+ * Displays cluster and node metrics from Prometheus with customizable queries.
+ *
+ * ## Configuration
+ *
+ * ### New Format (Recommended) - Named queries object:
+ * ```json
+ * {
+ *   "component": "PrometheusNodeMetrics",
+ *   "config": {
+ *     "queries": {
+ *       "cpuUsage": "promQueries.nodeMetrics.cpu_usage_v1-0-0",
+ *       "memoryTotal": "promQueries.nodeMetrics.memory_total_v1-0-0",
+ *       "memoryAvailable": "promQueries.nodeMetrics.memory_available_v1-0-0",
+ *       "nodeCount": "promQueries.clusterMetrics.node_count_v1-0-0",
+ *       "runningPods": "promQueries.clusterMetrics.running_pods_v1-0-0",
+ *       "totalPods": "promQueries.clusterMetrics.total_pods_v1-0-0",
+ *       "totalCpu": "promQueries.clusterMetrics.total_cpu_cores_v1-0-0",
+ *       "totalMemory": "promQueries.clusterMetrics.total_memory_bytes_v1-0-0"
+ *     }
+ *   }
+ * }
+ * ```
+ *
+ * ### Available Query Keys:
+ * - `cpuUsage` - Node CPU usage percentage (0-100)
+ * - `memoryTotal` - Node memory total in bytes
+ * - `memoryAvailable` - Node memory available in bytes
+ * - `nodeCount` - Number of nodes in cluster
+ * - `runningPods` - Number of running pods
+ * - `totalPods` - Total number of pods
+ * - `totalCpu` - Total CPU cores in cluster
+ * - `totalMemory` - Total memory bytes in cluster
+ *
+ * All query keys are optional - the component will gracefully handle missing queries.
+ *
+ * ### Legacy Format (Deprecated) - Ordered array:
+ * ```json
+ * {
+ *   "queryRefs": [
+ *     "promQueries.nodeMetrics.cpu_usage_v1-0-0",      // index 0 = cpuUsage
+ *     "promQueries.nodeMetrics.memory_total_v1-0-0",  // index 1 = memoryTotal
+ *     ...
+ *   ]
+ * }
+ * ```
+ * Note: The array format is position-dependent and error-prone. Use the named object format instead.
  */
 
-type PrometheusNodeMetricsProps = z.infer<typeof ComponentPropsSchema>;
+interface PrometheusNodeMetricsProps {
+  queryRefs?: string[]; // Legacy: ordered array (deprecated)
+  queries?: PrometheusNodeMetricsQueries; // New: named object (preferred)
+  title?: string;
+  showHeader?: boolean;
+}
+
+/**
+ * Normalizes legacy queryRefs array to named queries object
+ */
+function normalizeQueries(
+  queryRefs?: string[],
+  queries?: PrometheusNodeMetricsQueries
+): PrometheusNodeMetricsQueries | undefined {
+  // Prefer new format
+  if (queries && Object.keys(queries).length > 0) {
+    return queries;
+  }
+
+  // Fall back to legacy array format
+  if (queryRefs && queryRefs.length > 0) {
+    return {
+      cpuUsage: queryRefs[0],
+      memoryTotal: queryRefs[1],
+      memoryAvailable: queryRefs[2],
+      nodeCount: queryRefs[3],
+      runningPods: queryRefs[4],
+      totalPods: queryRefs[5],
+      totalCpu: queryRefs[6],
+      totalMemory: queryRefs[7],
+    };
+  }
+
+  return undefined;
+}
 
 function MetricCard({
   title,
@@ -96,20 +166,47 @@ function StatCard({
 }
 
 export function PrometheusNodeMetrics(props: PrometheusNodeMetricsProps) {
-  const { queryRefs } = props;
+  const { queryRefs, queries } = props;
 
-  // Resolve all query refs to actual PromQL strings - must be called unconditionally
-  const resolvedQueries = useResolvedQueries(queryRefs);
+  // Normalize to queries object (handles both legacy array and new object format)
+  const normalizedQueries = useMemo(
+    () => normalizeQueries(queryRefs, queries),
+    [queryRefs, queries]
+  );
+
+  // Resolve all named queries to actual PromQL strings
+  const resolvedQueries = useResolvedQueryMap(normalizedQueries);
 
   // Execute all queries in parallel - must be called unconditionally
-  const cpuQuery = usePrometheusQuery(resolvedQueries?.[0] || "", !!resolvedQueries?.[0]);
-  const memTotalQuery = usePrometheusQuery(resolvedQueries?.[1] || "", !!resolvedQueries?.[1]);
-  const memAvailQuery = usePrometheusQuery(resolvedQueries?.[2] || "", !!resolvedQueries?.[2]);
-  const nodeCountQuery = usePrometheusQuery(resolvedQueries?.[3] || "", !!resolvedQueries?.[3]);
-  const runningPodsQuery = usePrometheusQuery(resolvedQueries?.[4] || "", !!resolvedQueries?.[4]);
-  const totalPodsQuery = usePrometheusQuery(resolvedQueries?.[5] || "", !!resolvedQueries?.[5]);
-  const totalCpuQuery = usePrometheusQuery(resolvedQueries?.[6] || "", !!resolvedQueries?.[6]);
-  const totalMemQuery = usePrometheusQuery(resolvedQueries?.[7] || "", !!resolvedQueries?.[7]);
+  const cpuQuery = usePrometheusQuery(resolvedQueries.cpuUsage || "", !!resolvedQueries.cpuUsage);
+  const memTotalQuery = usePrometheusQuery(
+    resolvedQueries.memoryTotal || "",
+    !!resolvedQueries.memoryTotal
+  );
+  const memAvailQuery = usePrometheusQuery(
+    resolvedQueries.memoryAvailable || "",
+    !!resolvedQueries.memoryAvailable
+  );
+  const nodeCountQuery = usePrometheusQuery(
+    resolvedQueries.nodeCount || "",
+    !!resolvedQueries.nodeCount
+  );
+  const runningPodsQuery = usePrometheusQuery(
+    resolvedQueries.runningPods || "",
+    !!resolvedQueries.runningPods
+  );
+  const totalPodsQuery = usePrometheusQuery(
+    resolvedQueries.totalPods || "",
+    !!resolvedQueries.totalPods
+  );
+  const totalCpuQuery = usePrometheusQuery(
+    resolvedQueries.totalCpu || "",
+    !!resolvedQueries.totalCpu
+  );
+  const totalMemQuery = usePrometheusQuery(
+    resolvedQueries.totalMemory || "",
+    !!resolvedQueries.totalMemory
+  );
 
   const isLoading =
     cpuQuery.isLoading ||
@@ -220,7 +317,7 @@ export function PrometheusNodeMetrics(props: PrometheusNodeMetricsProps) {
   ]);
 
   // If no custom queries provided, use the default ClusterMetrics component
-  if (!queryRefs || queryRefs.length === 0) {
+  if (!normalizedQueries || Object.keys(normalizedQueries).length === 0) {
     return <ClusterMetrics />;
   }
 

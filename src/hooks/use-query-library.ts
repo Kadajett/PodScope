@@ -185,3 +185,48 @@ export function useQueryVariables(promQL: string | undefined) {
     return { variables, validate };
   }, [promQL]);
 }
+
+/**
+ * Hook for resolving named query references (object-based)
+ * Returns an object with the same keys but resolved PromQL strings
+ *
+ * @example
+ * const queries = useResolvedQueryMap({
+ *   cpuUsage: "promQueries.nodeMetrics.cpu_usage_v1-0-0",
+ *   memoryTotal: "promQueries.nodeMetrics.memory_total_v1-0-0"
+ * });
+ * // Returns: { cpuUsage: "100 - (avg(rate(...)))", memoryTotal: "node_memory_MemTotal_bytes" }
+ */
+export function useResolvedQueryMap<T extends Record<string, unknown>>(
+  queries: T | undefined,
+  variables?: Record<string, string>
+): Partial<Record<keyof T, string>> {
+  const { queryLibrary } = useQueryLibrary();
+
+  return useMemo(() => {
+    if (!queries || Object.keys(queries).length === 0) return {};
+
+    const resolved: Partial<Record<keyof T, string>> = {};
+
+    for (const [key, ref] of Object.entries(queries)) {
+      // Skip invalid refs - must be a non-empty string
+      if (!ref || typeof ref !== "string" || ref.trim() === "") {
+        if (ref !== undefined) {
+          log.warn({ key, ref }, "Skipping invalid query ref in map");
+        }
+        continue;
+      }
+
+      try {
+        const resolvedQuery = resolveQuery(ref, queryLibrary, variables);
+        if (resolvedQuery) {
+          resolved[key as keyof T] = resolvedQuery;
+        }
+      } catch (error) {
+        log.error({ key, ref, error }, "Failed to resolve query in map");
+      }
+    }
+
+    return resolved;
+  }, [queries, queryLibrary, variables]);
+}
