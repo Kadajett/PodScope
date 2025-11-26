@@ -1,0 +1,267 @@
+{
+  "version": "1.0.0",
+  "queueProviders": {
+    "redis-bullmq": {
+      "type": "bullmq",
+      "displayName": "Redis BullMQ",
+      "connection": {
+        "instances": "default:localhost:6379"
+      }
+    }
+  },
+  "queueQueries": {
+    "jobFilters": {
+      "all_queues_v1-0-0": {
+        "provider": "redis-bullmq"
+      },
+      "failed_jobs_v1-0-0": {
+        "provider": "redis-bullmq",
+        "status": "failed"
+      }
+    }
+  },
+  "kubeQueries": {
+    "podFilters": {
+      "all_pods_v1-0-0": {
+        "resourceType": "pods"
+      },
+      "running_pods_v1-0-0": {
+        "resourceType": "pods",
+        "fieldSelector": "status.phase=Running"
+      },
+      "failed_pods_v1-0-0": {
+        "resourceType": "pods",
+        "fieldSelector": "status.phase=Failed"
+      },
+      "pending_pods_v1-0-0": {
+        "resourceType": "pods",
+        "fieldSelector": "status.phase=Pending"
+      }
+    },
+    "nodeFilters": {
+      "all_nodes_v1-0-0": {
+        "resourceType": "nodes"
+      }
+    }
+  },
+  "queries": {
+    "nodeMetrics": {
+      "cpu_usage_v1-0-0": "100 - (avg(rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+      "memory_total_v1-0-0": "node_memory_MemTotal_bytes",
+      "memory_available_v1-0-0": "node_memory_MemAvailable_bytes",
+      "memory_usage_percent_v1-0-0": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100",
+      "disk_usage_percent_v1-0-0": "(1 - (node_filesystem_avail_bytes{mountpoint=\"/\"} / node_filesystem_size_bytes{mountpoint=\"/\"})) * 100",
+      "load_1m_v1-0-0": "node_load1"
+    },
+    "clusterMetrics": {
+      "node_count_v1-0-0": "count(kube_node_info)",
+      "running_pods_v1-0-0": "count(kube_pod_status_phase{phase=\"Running\"})",
+      "pending_pods_v1-0-0": "count(kube_pod_status_phase{phase=\"Pending\"})",
+      "failed_pods_v1-0-0": "count(kube_pod_status_phase{phase=\"Failed\"})",
+      "total_pods_v1-0-0": "count(kube_pod_info)",
+      "total_cpu_cores_v1-0-0": "sum(kube_node_status_capacity{resource=\"cpu\"})",
+      "total_memory_bytes_v1-0-0": "sum(kube_node_status_capacity{resource=\"memory\"})"
+    },
+    "podMetrics": {
+      "cpu_rate_v1-0-0": "sum(rate(container_cpu_usage_seconds_total{pod=\"{{pod}}\",namespace=\"{{namespace}}\",container!=\"POD\",container!=\"\"}[5m])) by (pod)",
+      "memory_usage_v1-0-0": "sum(container_memory_working_set_bytes{pod=\"{{pod}}\",namespace=\"{{namespace}}\",container!=\"POD\",container!=\"\"}) by (pod)"
+    },
+    "containerMetrics": {
+      "cpu_by_container_v1-0-0": "sum(rate(container_cpu_usage_seconds_total{pod=\"{{pod}}\",namespace=\"{{namespace}}\",container!=\"POD\",container!=\"\"}[5m])) by (container)",
+      "memory_by_container_v1-0-0": "sum(container_memory_working_set_bytes{pod=\"{{pod}}\",namespace=\"{{namespace}}\",container!=\"POD\",container!=\"\"}) by (container)"
+    }
+  },
+  "pages": [
+    {
+      "id": "overview",
+      "name": "Overview",
+      "icon": "LayoutDashboard",
+      "layout": [
+        {
+          "i": "cluster-metrics-1",
+          "x": 0,
+          "y": 0,
+          "w": 6,
+          "h": 4,
+          "component": "PrometheusNodeMetrics",
+          "config": {
+            "title": "Cluster Metrics",
+            "showHeader": true,
+            "queryRefs": [
+              "promQueries.nodeMetrics.cpu_usage_v1-0-0",
+              "promQueries.nodeMetrics.memory_usage_percent_v1-0-0",
+              "promQueries.clusterMetrics.node_count_v1-0-0",
+              "promQueries.clusterMetrics.running_pods_v1-0-0",
+              "promQueries.clusterMetrics.total_pods_v1-0-0"
+            ]
+          },
+          "minW": 4,
+          "minH": 3
+        },
+        {
+          "i": "pod-explorer-1",
+          "x": 6,
+          "y": 0,
+          "w": 6,
+          "h": 6,
+          "component": "KubeNamespacePodList",
+          "config": {
+            "title": "Pods",
+            "query": {
+              "resourceType": "pods"
+            },
+            "showHeader": true,
+            "showMetrics": true,
+            "showLogs": false
+          },
+          "minW": 5,
+          "minH": 5
+        },
+        {
+          "i": "events-1",
+          "x": 0,
+          "y": 4,
+          "w": 6,
+          "h": 4,
+          "component": "KubeEventStream",
+          "config": {
+            "title": "Recent Events",
+            "showHeader": true,
+            "maxEvents": 50
+          },
+          "minW": 4,
+          "minH": 3
+        }
+      ]
+    },
+    {
+      "id": "kubernetes",
+      "name": "Kubernetes",
+      "icon": "Server",
+      "layout": [
+        {
+          "i": "node-status-1",
+          "x": 0,
+          "y": 0,
+          "w": 12,
+          "h": 3,
+          "component": "KubeNodeStatus",
+          "config": {
+            "title": "Node Status",
+            "showHeader": true
+          },
+          "minW": 6,
+          "minH": 2
+        },
+        {
+          "i": "events-2",
+          "x": 0,
+          "y": 3,
+          "w": 6,
+          "h": 5,
+          "component": "KubeEventStream",
+          "config": {
+            "title": "Kubernetes Events",
+            "showHeader": true,
+            "maxEvents": 100
+          },
+          "minW": 4,
+          "minH": 3
+        },
+        {
+          "i": "pod-explorer-2",
+          "x": 6,
+          "y": 3,
+          "w": 6,
+          "h": 5,
+          "component": "KubeNamespacePodList",
+          "config": {
+            "title": "All Pods",
+            "query": {
+              "resourceType": "pods"
+            },
+            "showHeader": true,
+            "showMetrics": true,
+            "showLogs": true
+          },
+          "minW": 5,
+          "minH": 4
+        }
+      ]
+    },
+    {
+      "id": "queues",
+      "name": "Queues",
+      "icon": "ListOrdered",
+      "layout": [
+        {
+          "i": "bullmq-1",
+          "x": 0,
+          "y": 0,
+          "w": 12,
+          "h": 8,
+          "component": "BullMQMonitor",
+          "config": {
+            "title": "BullMQ Queue Monitor",
+            "showHeader": true
+          },
+          "minW": 6,
+          "minH": 5
+        }
+      ]
+    },
+    {
+      "id": "debug",
+      "name": "Debug",
+      "icon": "Terminal",
+      "layout": [
+        {
+          "i": "terminal-1",
+          "x": 0,
+          "y": 0,
+          "w": 12,
+          "h": 6,
+          "component": "KubeKubectlTerminal",
+          "config": {
+            "title": "kubectl Terminal",
+            "showHeader": true
+          },
+          "minW": 6,
+          "minH": 4
+        },
+        {
+          "i": "custom-query-1",
+          "x": 0,
+          "y": 6,
+          "w": 6,
+          "h": 4,
+          "component": "PrometheusCustomQuery",
+          "config": {
+            "title": "Custom PromQL",
+            "showHeader": true,
+            "query": "up",
+            "refreshInterval": 30000
+          },
+          "minW": 3,
+          "minH": 3
+        },
+        {
+          "i": "custom-query-2",
+          "x": 6,
+          "y": 6,
+          "w": 6,
+          "h": 4,
+          "component": "PrometheusCustomQuery",
+          "config": {
+            "title": "Scrape Targets",
+            "showHeader": true,
+            "query": "scrape_duration_seconds",
+            "refreshInterval": 30000
+          },
+          "minW": 3,
+          "minH": 3
+        }
+      ]
+    }
+  ]
+}

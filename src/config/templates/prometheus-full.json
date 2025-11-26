@@ -1,0 +1,158 @@
+{
+  "version": "1.0.0",
+  "queueProviders": {},
+  "queueQueries": {},
+  "kubeQueries": {
+    "podFilters": {
+      "all_pods_v1-0-0": {
+        "resourceType": "pods"
+      }
+    }
+  },
+  "queries": {
+    "nodeMetrics": {
+      "cpu_usage_v1-0-0": "100 - (avg(rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+      "cpu_usage_by_mode_v1-0-0": "avg(rate(node_cpu_seconds_total[5m])) by (mode) * 100",
+      "memory_total_v1-0-0": "node_memory_MemTotal_bytes",
+      "memory_available_v1-0-0": "node_memory_MemAvailable_bytes",
+      "memory_used_v1-0-0": "node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes",
+      "memory_usage_percent_v1-0-0": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100",
+      "disk_total_v1-0-0": "node_filesystem_size_bytes{mountpoint=\"/\"}",
+      "disk_available_v1-0-0": "node_filesystem_avail_bytes{mountpoint=\"/\"}",
+      "disk_usage_percent_v1-0-0": "(1 - (node_filesystem_avail_bytes{mountpoint=\"/\"} / node_filesystem_size_bytes{mountpoint=\"/\"})) * 100",
+      "load_1m_v1-0-0": "node_load1",
+      "load_5m_v1-0-0": "node_load5",
+      "load_15m_v1-0-0": "node_load15",
+      "uptime_seconds_v1-0-0": "node_time_seconds - node_boot_time_seconds"
+    },
+    "networkMetrics": {
+      "network_receive_bytes_v1-0-0": "rate(node_network_receive_bytes_total{device!~\"lo|veth.*|docker.*|br-.*\"}[5m])",
+      "network_transmit_bytes_v1-0-0": "rate(node_network_transmit_bytes_total{device!~\"lo|veth.*|docker.*|br-.*\"}[5m])",
+      "network_receive_errors_v1-0-0": "rate(node_network_receive_errs_total[5m])",
+      "network_transmit_errors_v1-0-0": "rate(node_network_transmit_errs_total[5m])",
+      "network_receive_drop_v1-0-0": "rate(node_network_receive_drop_total[5m])",
+      "network_transmit_drop_v1-0-0": "rate(node_network_transmit_drop_total[5m])"
+    },
+    "clusterMetrics": {
+      "node_count_v1-0-0": "count(kube_node_info)",
+      "running_pods_v1-0-0": "count(kube_pod_status_phase{phase=\"Running\"})",
+      "pending_pods_v1-0-0": "count(kube_pod_status_phase{phase=\"Pending\"})",
+      "failed_pods_v1-0-0": "count(kube_pod_status_phase{phase=\"Failed\"})",
+      "succeeded_pods_v1-0-0": "count(kube_pod_status_phase{phase=\"Succeeded\"})",
+      "unknown_pods_v1-0-0": "count(kube_pod_status_phase{phase=\"Unknown\"})",
+      "total_pods_v1-0-0": "count(kube_pod_info)",
+      "total_cpu_cores_v1-0-0": "sum(kube_node_status_capacity{resource=\"cpu\"})",
+      "total_memory_bytes_v1-0-0": "sum(kube_node_status_capacity{resource=\"memory\"})",
+      "cpu_requests_v1-0-0": "sum(kube_pod_container_resource_requests{resource=\"cpu\"})",
+      "cpu_limits_v1-0-0": "sum(kube_pod_container_resource_limits{resource=\"cpu\"})",
+      "memory_requests_v1-0-0": "sum(kube_pod_container_resource_requests{resource=\"memory\"})",
+      "memory_limits_v1-0-0": "sum(kube_pod_container_resource_limits{resource=\"memory\"})",
+      "namespaces_count_v1-0-0": "count(kube_namespace_created)",
+      "deployments_count_v1-0-0": "count(kube_deployment_created)",
+      "services_count_v1-0-0": "count(kube_service_info)"
+    },
+    "podMetrics": {
+      "cpu_rate_v1-0-0": "sum(rate(container_cpu_usage_seconds_total{pod=\"{{pod}}\",namespace=\"{{namespace}}\",container!=\"POD\",container!=\"\"}[5m])) by (pod)",
+      "memory_usage_v1-0-0": "sum(container_memory_working_set_bytes{pod=\"{{pod}}\",namespace=\"{{namespace}}\",container!=\"POD\",container!=\"\"}) by (pod)",
+      "memory_rss_v1-0-0": "sum(container_memory_rss{pod=\"{{pod}}\",namespace=\"{{namespace}}\",container!=\"POD\",container!=\"\"}) by (pod)",
+      "memory_cache_v1-0-0": "sum(container_memory_cache{pod=\"{{pod}}\",namespace=\"{{namespace}}\",container!=\"POD\",container!=\"\"}) by (pod)",
+      "restart_count_v1-0-0": "sum(kube_pod_container_status_restarts_total{pod=\"{{pod}}\",namespace=\"{{namespace}}\"}) by (pod)",
+      "network_receive_v1-0-0": "sum(rate(container_network_receive_bytes_total{pod=\"{{pod}}\",namespace=\"{{namespace}}\"}[5m])) by (pod)",
+      "network_transmit_v1-0-0": "sum(rate(container_network_transmit_bytes_total{pod=\"{{pod}}\",namespace=\"{{namespace}}\"}[5m])) by (pod)"
+    },
+    "containerMetrics": {
+      "cpu_by_container_v1-0-0": "sum(rate(container_cpu_usage_seconds_total{pod=\"{{pod}}\",namespace=\"{{namespace}}\",container!=\"POD\",container!=\"\"}[5m])) by (container)",
+      "memory_by_container_v1-0-0": "sum(container_memory_working_set_bytes{pod=\"{{pod}}\",namespace=\"{{namespace}}\",container!=\"POD\",container!=\"\"}) by (container)",
+      "cpu_throttled_v1-0-0": "sum(rate(container_cpu_cfs_throttled_seconds_total{pod=\"{{pod}}\",namespace=\"{{namespace}}\",container!=\"POD\",container!=\"\"}[5m])) by (container)"
+    },
+    "alertMetrics": {
+      "firing_alerts_v1-0-0": "count(ALERTS{alertstate=\"firing\"})",
+      "pending_alerts_v1-0-0": "count(ALERTS{alertstate=\"pending\"})",
+      "alerts_by_severity_v1-0-0": "count(ALERTS{alertstate=\"firing\"}) by (severity)"
+    }
+  },
+  "pages": [
+    {
+      "id": "metrics",
+      "name": "Metrics",
+      "icon": "Activity",
+      "layout": [
+        {
+          "i": "cluster-metrics-1",
+          "x": 0,
+          "y": 0,
+          "w": 8,
+          "h": 5,
+          "component": "PrometheusNodeMetrics",
+          "config": {
+            "title": "Cluster Overview",
+            "showHeader": true,
+            "queryRefs": [
+              "promQueries.nodeMetrics.cpu_usage_v1-0-0",
+              "promQueries.nodeMetrics.memory_usage_percent_v1-0-0",
+              "promQueries.nodeMetrics.disk_usage_percent_v1-0-0",
+              "promQueries.clusterMetrics.node_count_v1-0-0",
+              "promQueries.clusterMetrics.running_pods_v1-0-0",
+              "promQueries.clusterMetrics.total_pods_v1-0-0",
+              "promQueries.clusterMetrics.total_cpu_cores_v1-0-0",
+              "promQueries.clusterMetrics.total_memory_bytes_v1-0-0"
+            ]
+          },
+          "minW": 6,
+          "minH": 4
+        },
+        {
+          "i": "custom-query-1",
+          "x": 8,
+          "y": 0,
+          "w": 4,
+          "h": 5,
+          "component": "PrometheusCustomQuery",
+          "config": {
+            "title": "Custom Query",
+            "showHeader": true,
+            "query": "up",
+            "refreshInterval": 30000
+          },
+          "minW": 3,
+          "minH": 3
+        },
+        {
+          "i": "pod-explorer-1",
+          "x": 0,
+          "y": 5,
+          "w": 6,
+          "h": 6,
+          "component": "KubeNamespacePodList",
+          "config": {
+            "title": "Pods",
+            "query": {
+              "resourceType": "pods"
+            },
+            "showHeader": true,
+            "showMetrics": true,
+            "showLogs": true
+          },
+          "minW": 5,
+          "minH": 5
+        },
+        {
+          "i": "custom-query-2",
+          "x": 6,
+          "y": 5,
+          "w": 6,
+          "h": 6,
+          "component": "PrometheusCustomQuery",
+          "config": {
+            "title": "Network I/O",
+            "showHeader": true,
+            "query": "sum(rate(node_network_receive_bytes_total[5m]))",
+            "refreshInterval": 30000
+          },
+          "minW": 3,
+          "minH": 3
+        }
+      ]
+    }
+  ]
+}

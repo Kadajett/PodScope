@@ -191,6 +191,28 @@ export function useDashboardConfig() {
     return result;
   }, []);
 
+  // Reload configuration from storage
+  const reload = useCallback(() => {
+    try {
+      const loadedConfig = loadConfig();
+      setConfig(loadedConfig);
+    } catch (error) {
+      log.error({ error }, "Failed to reload config");
+    }
+  }, []);
+
+  // Listen for config restored events
+  useEffect(() => {
+    const handleConfigRestored = () => {
+      reload();
+    };
+
+    window.addEventListener("podscope-config-restored", handleConfigRestored);
+    return () => {
+      window.removeEventListener("podscope-config-restored", handleConfigRestored);
+    };
+  }, [reload]);
+
   return {
     config,
     isLoading,
@@ -203,6 +225,7 @@ export function useDashboardConfig() {
     removeContainer,
     updateContainer,
     reset,
+    reload,
     exportConfig: exportConfigJSON,
     downloadConfig: download,
     importConfig: importConfigJSON,

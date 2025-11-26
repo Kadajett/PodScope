@@ -225,3 +225,157 @@ export function formatBytes(bytes: number): string {
 
   return `${value.toFixed(2)} ${units[unitIndex]}`;
 }
+
+// Metric discovery types
+export interface MetricMetadata {
+  type: "counter" | "gauge" | "histogram" | "summary" | "unknown";
+  help: string;
+  unit: string;
+}
+
+export interface MetricInfo {
+  name: string;
+  metadata?: MetricMetadata;
+  labels?: string[];
+}
+
+export interface LabelValues {
+  label: string;
+  values: string[];
+}
+
+// Get all available metric names from Prometheus
+export async function getMetricNames(): Promise<string[]> {
+  try {
+    const response = await fetchPrometheus<{
+      status: string;
+      data: string[];
+    }>("/api/v1/label/__name__/values");
+
+    if (response.status === "success") {
+      return response.data || [];
+    }
+    return [];
+  } catch (error) {
+    console.error("Failed to fetch metric names:", error);
+    return [];
+  }
+}
+
+// Get all available label names
+export async function getLabelNames(): Promise<string[]> {
+  try {
+    const response = await fetchPrometheus<{
+      status: string;
+      data: string[];
+    }>("/api/v1/labels");
+
+    if (response.status === "success") {
+      return response.data || [];
+    }
+    return [];
+  } catch (error) {
+    console.error("Failed to fetch label names:", error);
+    return [];
+  }
+}
+
+// Get values for a specific label
+export async function getLabelValues(labelName: string): Promise<string[]> {
+  try {
+    const response = await fetchPrometheus<{
+      status: string;
+      data: string[];
+    }>(`/api/v1/label/${encodeURIComponent(labelName)}/values`);
+
+    if (response.status === "success") {
+      return response.data || [];
+    }
+    return [];
+  } catch (error) {
+    console.error(`Failed to fetch values for label ${labelName}:`, error);
+    return [];
+  }
+}
+
+// Get metadata for all metrics (type, help text, unit)
+export async function getMetricsMetadata(): Promise<Record<string, MetricMetadata[]>> {
+  try {
+    const response = await fetchPrometheus<{
+      status: string;
+      data: Record<string, MetricMetadata[]>;
+    }>("/api/v1/metadata");
+
+    if (response.status === "success") {
+      return response.data || {};
+    }
+    return {};
+  } catch (error) {
+    console.error("Failed to fetch metric metadata:", error);
+    return {};
+  }
+}
+
+// Get labels for a specific metric
+export async function getMetricLabels(metricName: string): Promise<string[]> {
+  try {
+    // Query the metric to get its labels
+    const response = await queryInstant({ query: metricName });
+
+    if (response.status === "success" && response.data?.result?.[0]) {
+      const labels = Object.keys(response.data.result[0].metric || {}).filter(
+        (l) => l !== "__name__"
+      );
+      return labels;
+    }
+    return [];
+  } catch (error) {
+    console.error(`Failed to fetch labels for metric ${metricName}:`, error);
+    return [];
+  }
+}
+
+// Comprehensive metric discovery - combines names with metadata
+export async function discoverMetrics(): Promise<{
+  metrics: MetricInfo[];
+  labels: string[];
+  totalCount: number;
+}> {
+  const [metricNames, metadata, labelNames] = await Promise.all([
+    getMetricNames(),
+    getMetricsMetadata(),
+    getLabelNames(),
+  ]);
+
+  const metrics: MetricInfo[] = metricNames.map((name) => {
+    const meta = metadata[name]?.[0];
+    return {
+      name,
+      metadata: meta
+        ? {
+            type: meta.type || "unknown",
+            help: meta.help || "",
+            unit: meta.unit || "",
+          }
+        : undefined,
+    };
+  });
+
+  return {
+    metrics,
+    labels: labelNames.filter((l) => l !== "__name__"),
+    totalCount: metrics.length,
+  };
+}
+
+// Search metrics by name or help text
+export async function searchMetrics(query: string): Promise<MetricInfo[]> {
+  const { metrics } = await discoverMetrics();
+  const lowerQuery = query.toLowerCase();
+
+  return metrics.filter(
+    (m) =>
+      m.name.toLowerCase().includes(lowerQuery) ||
+      m.metadata?.help?.toLowerCase().includes(lowerQuery)
+  );
+}
