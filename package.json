@@ -1,6 +1,6 @@
 {
   "name": "podscope",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Lightweight Kubernetes monitoring dashboard with Prometheus integration and real-time cluster insights",
   "keywords": [
     "kubernetes",
